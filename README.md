@@ -1,50 +1,46 @@
 # README
 
-## 1 Set Up
+> Curator 这什么狗屎依赖关系啊 ！
 
-### 1.1 环境
+## 1 Zookeeper 运行环境
 
-> 至少在这个环境能动
+1. Windows 10 （问就是不会配虚拟机的端口）
+2. JRE 8 （JDK 1.8及以上）
+3. Zookeeper 3.8.0
 
-- Windows 10（谁来教我把 WSL 端口映射到本机啊！）
-- JDK 7（至少 zookeeper 的运行环境是 JDK 7） 
-    > JDK7 [下载链接](https://repo.huaweicloud.com/java/jdk/7u80-b15/)（华为镜像）
-- IDEA（不重要）
+> 至少在上述环境下能动
 
-### 1.2 安装 Zookeeper
-> 教程见[此处](https://blog.csdn.net/qq_33316784/article/details/88563482#:~:text=windows%E5%AE%89%E8%A3%85zookeeper%E6%95%99%E7%A8%8B%2003-16%201.%20%E4%B8%8B%E8%BD%BD%20Zookeeper%E5%AE%89%E8%A3%85%20%E5%8C%85%EF%BC%9A%E4%BB%8E%E5%AE%98%E7%BD%91%E4%B8%8B%E8%BD%BD%20Zookeeper%20%E7%9A%84,2.%20%E8%A7%A3%E5%8E%8B%20%E5%AE%89%E8%A3%85%20%E5%8C%85%EF%BC%9A%E5%B0%86%E4%B8%8B%E8%BD%BD%E7%9A%84%20%E5%AE%89%E8%A3%85%20%E5%8C%85%E8%A7%A3%E5%8E%8B%E5%88%B0%E4%BD%A0%E6%83%B3%E8%A6%81%20%E5%AE%89%E8%A3%85%20%E7%9A%84%E7%9B%AE%E5%BD%95%E4%B8%8B%E3%80%82)
+### 1.1 Zookeeper 安装与运行
+> 资源在 `/dependencies` 目录下
 
-1. 下载对应版本的 [Zookeeper](https://archive.apache.org/dist/zookeeper/zookeeper-3.4.14/)
-2. 使用 `tar -zxvf zookeeper-3.4.14.tar.gz` 解压到安装目录
-3. 在安装目录（与 `bin` 同级）下新建 `/data` & `/log`
-4. 将 `conf` 目录下的 `zoo_sample.cfg` 文件，复制一份，重命名为 `zoo.cfg`
-    ```yaml
-   dataDir = '/data 的绝对路径'
-   dataLogDir = '/log 的绝对路径'
-   clientPort = 2181 # 即为 Server 监听的端口号
-   ```
-5. 把 `/bin` 下的 `zkServer.cmd` 拖到命令行里执行就可以了，成功运行的预期显示如下：
-    ```text
-   # 最后一行
-    - INFO  [main:NIOServerCnxnFactory@89] - binding to port 0.0.0.0/0.0.0.0:2181
+1. 将 `apache-zookeeper-3.8.0-bin.tar.gz` 挪到合适的安装路径下
+2. 使用 Powershell 解压至当前目录，命令如下：
+    ```shell
+    tar -zxvf apache-zookeeper-3.8.0-bin.tar.gz
     ```
-6. 保险起见也运行一下 `zkCli.cmd`，预期的正常运行结果如下：
-    ```text
-    # 最后几行
-    [zk: localhost:2181(CONNECTING) 0] 2023-04-27 23:01:27,347 [myid:] - INFO  [main-SendThread(localhost:2181):ClientCnxn$SendThread@1299] - Session establishment complete on server localhost/0:0:0:0:0:0:0:1:2181, sessionid = 0x10000a13e400000, negotiated timeout = 30000
-    WATCHER::
-    WatchedEvent state:SyncConnected type:None path:null
-   
-    # 正常连接时 Server 响应如下：
-    - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxnFactory@222] - Accepted socket connection from /0:0:0:0:0:0:0:1:14123 
-    ```
-#### INFO - 可能的报错
-- `JAVA_HOME unset` => 设置环境变量 `JAVA_HOME` 到 JDK `/bin` 的上一级文件夹就可以了
+3. 在根目录下（与 `/bin` 同级）创建 `data` & `log`路径，用于存储数据和日志
+4. 复制 `/dependencies` 下的 `zoo.cfg` 至安装目录的 `/conf` 文件夹下
 
-## 2 Basic
+    请根据实际情况修改 `dataDir` 与 `dataLogDir` 配置项为实际绝对路径
 
-> Reference - [Curator 基本使用](https://zhuanlan.zhihu.com/p/611161550#:~:text=Curator%E7%9A%84%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8%201%20%E4%B8%80.%20%E5%89%8D%E8%A8%80%20%E5%AE%98%E7%BD%91%20%3A%20Apache%20Curator,%E7%89%88%E6%9C%AC%20...%203%20%E4%B8%89.%20Curator%E4%BD%BF%E7%94%A8%201.%20%E5%88%9B%E5%BB%BA%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%BF%9E%E6%8E%A5%20)
+5. 把 `/bin/zkServer.cmd` 拖到命令提示符中运行
 
-- 依赖
-  - Curator 4.2.0
-  - Zookeeper 3.4.14
+### 1.2 JRE8 安装与环境变量配置
+
+- 在运行 `zkServer.cmd` 的过程中，您往往会遇到各种迷幻的错误 —— 这往往是由于未配置环境变量 or JDK 版本不匹配导致的
+- 为此，您需要安装 JDK1.8（或者仅 JRE8）来保证 Zookeeper 3.8.0 的正确运行）
+- `/dependencies` 下提供了 JRE8 的安装程序，请按需取用
+- 安装完毕后，请设置系统变量 `JAVA_HOME` 至 JRE8 的安装根路径（`/bin` 的上一级目录）
+
+## 2 项目开发环境
+
+1. open JDK 20
+2. Curator 5.2.1
+3. Zookeeper 3.8.0
+
+> `pom.xml` 里已经写好了，直接用就行
+
+## 3 可供参考的 GitHub 仓库
+
+1. https://github.com/Zhang-Each/Distributed-MiniSQL
+2. https://github.com/zwc233/LargeScaleSystem
