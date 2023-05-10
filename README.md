@@ -1,5 +1,22 @@
 # README
 
+---
+
+## UPDATE @2023/05/10
+
+本仓库结构调整：
+
+1. `sample` 之前的简单终端连接 zookeeper 样例
+2. `front` 一个草率的 Vue 项目（默认端口：8080）
+3. `master` 一个草率的 SpringBoot 项目
+    - 默认端口 8088，开启了 debug 模式
+    - 访问 `localhost:8088/` 应该会显示 `hello world`
+    - 在启动类的 main 函数里添加了连接 zookeeper、读取 `/test` 节点信息的操作
+        - 具体实现在 Zookeeper 类里
+        - 正常连接会在终端打印读取结果
+
+---
+
 > Curator 这什么狗屎依赖关系啊 ！
 
 ## 1 Zookeeper 运行环境
