@@ -37,14 +37,9 @@ public class Zookeeper {
         System.out.println("data @ /test = " + new String(client.getData().storingStatIn(stat).forPath("/test")));
         System.out.println("if you can see the return value, then you're successfully connected.");
 
-        // 测试 childrens
-//        List<String> tables = this.getChildsData("/region1/tables");
-//        System.out.println("tables in region_1 are:");
-//        for(String tName : tables) {
-//            System.out.println(tName);
-//        }
         // INIT
         this.initMeta();
+
 
 //        this.client.close();
     }
@@ -76,7 +71,7 @@ public class Zookeeper {
             ZkListener zkListener = new ZkListener(this.client, "/region"+(i+1), region);
             zkListener.listenMaster();
             // 监听 /slaves 的所有子节点
-
+            zkListener.listenSlaves();
             // 监听 /tables 的所有子节点
         }
     }
@@ -107,6 +102,21 @@ class ZkListener {
         }
     }
 
+    // 监听 slave 的创建与删除事件
+    public void listenSlaves() {
+        try {
+            // 测试监听子节点创建事件
+            TreeCache treeCache = new TreeCache(this.client, basePath + "/slaves");
+            SlaveListener listener = new SlaveListener();
+            // 注册监听
+            treeCache.getListenable().addListener(listener);
+            // 开启监听
+            treeCache.start();
+        } catch (Exception e) {
+            System.out.println("监听 " + basePath + " 的 SLAVES 时出错");
+        }
+    }
+
     class MaterListener implements NodeCacheListener {
 
         MaterListener(NodeCache nodeCache) {
@@ -116,7 +126,7 @@ class ZkListener {
         private NodeCache nodeCache;
 
         @Override
-        public void nodeChanged() throws Exception {
+        public void nodeChanged() {
             try {
                 // master 已存在/被创建
                 ChildData childData = nodeCache.getCurrentData();
@@ -128,6 +138,28 @@ class ZkListener {
                 // master 被删除
                 System.out.println(basePath + " lost its MASTER");
                 region.master = "";
+            }
+        }
+    }
+
+    class SlaveListener implements TreeCacheListener {
+
+        @Override
+        public void childEvent(CuratorFramework curatorFramework, TreeCacheEvent treeCacheEvent) throws Exception {
+            if (treeCacheEvent.getType() == TreeCacheEvent.Type.NODE_ADDED
+                    &&
+                    !treeCacheEvent.getData().getPath().equals(basePath + "/slaves")) {
+                // 创建新的 slaveNode（第二个条件是忽略父节点本身的创建事件）
+                String connectStr = new String(treeCacheEvent.getData().getData());
+                region.slaves.add(connectStr);
+                region.n_slave = region.slaves.size();
+                System.out.println("new SLAVE for " + basePath + " @" + connectStr + ", " + region.n_slave + " SLAVES available now" );
+            } else if (treeCacheEvent.getType() == TreeCacheEvent.Type.NODE_REMOVED) {
+                // slaveNode 被删除（更新可用数量与路由信息列表）
+                String connectStr = new String(treeCacheEvent.getData().getData());
+                region.slaves.remove(connectStr);
+                region.n_slave = region.slaves.size();
+                System.out.println("lost SLAVE for " + basePath + " @" + connectStr + ", " + region.n_slave + " SLAVES available now" );
             }
         }
     }
