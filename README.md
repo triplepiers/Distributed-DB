@@ -2,6 +2,13 @@
 
 ---
 
+## UPDARE @2023/05/13
+
+1. MASTER 基本完工，工程见 `/master` ，接口和 Zookeeper 节点设计见 md 文件（节点可能不太准）
+2. RegionServer 开了个头
+
+> 痛苦面具
+
 ## UPDATE @2023/05/10
 
 本仓库结构调整：
