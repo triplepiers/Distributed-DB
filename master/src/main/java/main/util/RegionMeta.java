@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class Region {
+public class RegionMeta {
 
     public String master = ""; // master 的 connectString
 
@@ -23,12 +23,14 @@ public class Region {
 
     // 是否可写（有主节点 + n_slave >= 2）
     public Boolean isWritable() {
-        return (!this.master.equals("") && this.cur_slave>1);
+        return (!this.master.equals("") && this.n_slave>1);
     }
 
     // 是否可读
     public String getReadServer() {
+        System.out.println("get read");
         if(this.n_slave>0) {
+            System.out.println("has slave");
             this.cur_slave = (this.cur_slave+1) % this.n_slave;
             return this.slaves.get(cur_slave);
         } else if (!this.master.equals("")) {
