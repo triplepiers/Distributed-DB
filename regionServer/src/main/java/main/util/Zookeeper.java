@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.function.Function;
 
 public class Zookeeper {
 
@@ -34,12 +35,13 @@ public class Zookeeper {
 
     private final String basePath = "/region1"; // 本 regionServer 所在的 regionID
 
-    private final int serverID = 1; // 本 regionServer 的 ServerID
+    private final String serverID = "1"; // 本 regionServer 的 ServerID
 
     private final byte[] selfAddr = "127.0.0.1:8081".getBytes(); // 本 regionServer 后端项目监听的端口
 
     private final String zkServerAddr  = "127.0.0.1:2181";
 
+    private ZkListener zkListener = null;
 
     private CuratorFramework client;
 
@@ -61,8 +63,8 @@ public class Zookeeper {
         } catch (Exception e) {
             System.out.println(e);
         }
-//
-//        // INIT
+
+        // INIT
         this.init();
     }
 
@@ -73,40 +75,25 @@ public class Zookeeper {
         }
     }
 
-    // 获取指定路径下所有节点的[数据]！
-    public List<String> getChildsData(String parentPath) {
-        // 获取所有子节点路径
-        List<String> childsData = new ArrayList<>();
-        try {
-            List<String> childsPath = this.client.getChildren().forPath(parentPath);
-            for (String path : childsPath) {
-                String data = new String(this.client.getData().forPath(parentPath + "/" + path));
-                childsData.add(data);
-                System.out.println("data @" + path + " = " + data);
-            }
-        } catch (Exception e) {
-            System.out.println("子节点数据获取失败");
-        }
-        return childsData;
-    }
-
     // 初始化当前数据集的 meta 信息
     public void init() {
+        ZkListener zkListener = new ZkListener(this.client, this.basePath);
+        this.zkListener = zkListener;
+
         // 1. 检查是否存在 master 节点
         try {
             if (this.client.checkExists().forPath(basePath +  "/master") == null) {
-                System.out.println("not exist");
                 this.beMaster(); // 尝试成为主节点
             } else {
-                System.out.println("already exist");
+                this.beSlave(); // 成为从节点
             }
         } catch (Exception e) {
             System.out.println("检查 MASTER 是否存在时出错");
         }
-//        ZkListener zkListener = new ZkListener(this.client, "/region" + this.regionID);
-
     }
 
+
+    // 尝试成为 master
     public void beMaster() {
         // 注册临时节点
         try {
@@ -114,8 +101,18 @@ public class Zookeeper {
         } catch (Exception e) {
             System.out.println("未能成为 MASTER");
             // be slave
+            this.beSlave();
             return;
         }
+
+        System.out.println("current server is a MASTER");
+        // 关闭对 /master 的监听
+        this.zkListener.stopListenMaster();
+        // 删除对应的 slave 节点
+        try {
+            this.client.delete().forPath(basePath + "/slaves/" + serverID);
+        } catch (Exception e) {}
+
         // 向 /tables 路径写入所有 table 信息
         try {
             Connection conn = dataSource.getConnection();
@@ -141,52 +138,65 @@ public class Zookeeper {
             System.out.println(e);
         }
     }
-}
 
-class ZkListener {
-
-    private String basePath;
-
-    ZkListener(CuratorFramework client, String basePath) {
-        this.client = client;
-        this.basePath = basePath;
-    }
-
-    private CuratorFramework client;
-
-    // 对指定的 leaf Node 进行监听
-    public void listenMaster() {
+    // 成为 slave
+    public void beSlave() {
+        System.out.println("current server is a SLAVE");
+        // 把自己的 ID 写到 /slaves 下
         try {
-            NodeCache nodeCache = new NodeCache(this.client, basePath + "/master");
-            MaterListener masterListener = new MaterListener(nodeCache);
-            nodeCache.getListenable().addListener(masterListener);
-            nodeCache.start();
-        } catch (Exception e) {
-            System.out.println("监听 " + basePath + " 的 MASTER 时出错");
-        }
+            this.client.create().withMode(CreateMode.EPHEMERAL).forPath(basePath + "/slaves/" + serverID, selfAddr);
+        } catch (Exception e) {}
+        // 注册对 /master 的监听
+        this.zkListener.listenMaster();
     }
+    class ZkListener {
 
-    class MaterListener implements NodeCacheListener {
-
-        MaterListener(NodeCache nodeCache) {
-            this.nodeCache = nodeCache;
-        }
-
-        private NodeCache nodeCache;
-
-        @Override
-        public void nodeChanged() {
-            try {
-                // master 已存在/被创建
-                ChildData childData = nodeCache.getCurrentData();
-                String masterAddr = new String(childData.getData());
-                System.out.println(basePath + "'s MASTER is @" + masterAddr);
-
-            } catch (Exception e){
-                // master 被删除
-                System.out.println(basePath + " lost its MASTER");
+        public void stopListenMaster() {
+            if(this.treeCache != null) {
+                try {
+                    this.treeCache.close();
+                } catch (Exception e) {
+                    System.out.println("未能成功停止对 master 的监视");
+                }
             }
         }
-    }
 
+        private TreeCache treeCache = null;
+
+        private String basePath;
+
+        ZkListener(CuratorFramework client, String basePath) {
+            this.client = client;
+            this.basePath = basePath;
+        }
+
+        private CuratorFramework client;
+
+        // 对指定的 leaf Node 进行监听
+        public void listenMaster() {
+            try {
+                TreeCache treeCache = new TreeCache(this.client, basePath + "/master");
+                this.treeCache  = treeCache ;
+                MasterListener masterListener = new MasterListener();
+                treeCache .getListenable().addListener(masterListener);
+                treeCache .start();
+            } catch (Exception e) {
+                System.out.println("监听 " + basePath + " 的 MASTER 时出错");
+            }
+        }
+
+        class MasterListener implements TreeCacheListener {
+
+            @Override
+            public void childEvent(CuratorFramework curatorFramework, TreeCacheEvent treeCacheEvent) throws Exception {
+                if(treeCacheEvent.getType() == TreeCacheEvent.Type.NODE_REMOVED) {
+                    // master 被删除
+                    System.out.println("原 MASTER 失去连接。尝试成为 MASTER ...");
+                    beMaster();
+                }
+            }
+        }
+
+    }
 }
+
