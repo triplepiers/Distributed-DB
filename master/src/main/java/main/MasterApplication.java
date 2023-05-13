@@ -83,6 +83,14 @@ public class MasterApplication {
         return res;
     }
 
+    // Meta 信息（tableName + writable）
+    @RequestMapping("/meta")
+    public JSONObject getMeta() {
+        JSONObject res = new JSONObject();
+        res.put("data", zk.getMeta());
+        return res;
+    }
+
     @RequestMapping("/")
     public String hello() {
         return "hello world";

@@ -1,5 +1,7 @@
 package main.util;
 
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -152,6 +154,22 @@ public class Zookeeper {
             }
         }
         return addr;
+    }
+
+    // 获取 meta 列表（tableName + writable）
+    public JSONArray getMeta() {
+        JSONArray res = new JSONArray();
+        for(int i = 0 ; i < maxRegion ; i++) {
+            RegionMeta r = meta.get(i);
+            Boolean writable = r.isWritable();
+            for(String tName : r.tables) {
+                JSONObject record = new JSONObject();
+                record.put("name", tName);
+                record.put("writable", writable);
+                res.add(record);
+            }
+        }
+        return res;
     }
 
 }
