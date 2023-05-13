@@ -27,8 +27,6 @@ public class Zookeeper {
 
     private CuratorFramework client;
 
-    private Map<String, CuratorCache> cacheMap = new HashMap<>();
-
     public void connect() throws Exception {
         String connectStr = this.serverIP + ":" + this.serverPort;
         System.out.println("Trying to connect Zk Sever @" + connectStr);
