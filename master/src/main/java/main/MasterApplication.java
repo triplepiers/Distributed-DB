@@ -2,6 +2,7 @@ package main;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import jakarta.annotation.PostConstruct;
 import main.util.Zookeeper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -23,7 +24,10 @@ public class MasterApplication {
 
     public static void main(String[] args) throws Exception {
         SpringApplication.run(MasterApplication.class, args);
+    }
 
+    @PostConstruct
+    public void init() {
         // Zookeeper 连接测试
         Zookeeper zk = new Zookeeper(MasterApplication.maxRegion);
         MasterApplication.zk = zk;

@@ -2,6 +2,7 @@ package main;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import jakarta.annotation.PostConstruct;
 import main.util.Zookeeper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -16,6 +17,7 @@ import java.sql.*;
 @RestController
 @SpringBootApplication
 public class MasterApplication {
+
     private static Zookeeper zk;
 
     @Autowired
@@ -23,16 +25,27 @@ public class MasterApplication {
 
     public static void main(String[] args) throws Exception {
         SpringApplication.run(MasterApplication.class, args);
+    }
 
+    @PostConstruct
+    public void init() {
         // Zookeeper 连接测试
-        Zookeeper zk = new Zookeeper();
+        Zookeeper zk = new Zookeeper(dataSource);
         MasterApplication.zk = zk;
         zk.connect();
     }
 
+
+
     @RequestMapping("/")
     public String hello() {
         return "hello world";
+    }
+
+    @RequestMapping("/close")
+    public void disconnect() {
+        zk.disconnect();
+        System.out.println("Zookeeper connection CLOSED");
     }
 
     // 测试 JDBC（

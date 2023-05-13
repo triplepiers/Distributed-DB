@@ -27,7 +27,7 @@ public class Zookeeper {
 
     private CuratorFramework client;
 
-    public void connect() throws Exception {
+    public void connect() {
         String connectStr = this.serverIP + ":" + this.serverPort;
         System.out.println("Trying to connect Zk Sever @" + connectStr);
 
@@ -72,6 +72,7 @@ public class Zookeeper {
             RegionMeta regionMeta = new RegionMeta();
             // 监听 /master 节点
             ZkListener zkListener = new ZkListener(this.client, "/region" + (i + 1), regionMeta);
+            zkListener.listenMaster();
             zkListener.listenMaster();
             // 监听 /tables 的所有子节点
             zkListener.listenTables();
@@ -279,11 +280,11 @@ class ZkListener {
                     !treeCacheEvent.getData().getPath().equals(basePath + "/tables")) {
                 String tableName = new String(treeCacheEvent.getData().getData());
                 regionMeta.tables.add(tableName);
-                System.out.println("new TABLE for " + basePath + " :" + tableName + regionMeta.tables.size());
+                System.out.println("new TABLE for " + basePath + " :" + tableName);
             } else if (treeCacheEvent.getType() == TreeCacheEvent.Type.NODE_REMOVED) {
                 String tableName = new String(treeCacheEvent.getData().getData());
                 regionMeta.tables.remove(tableName);
-                System.out.println("lost TABLE for " + basePath + " :" + tableName + regionMeta.tables.size());
+                System.out.println("lost TABLE for " + basePath + " :" + tableName);
             }
         }
     }
