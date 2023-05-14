@@ -171,6 +171,13 @@ public class Zookeeper {
         return res;
     }
 
+    // 关闭 zookeeper 会话
+    public void disconnect() {
+        if(this.client != null) {
+            this.client.close();
+            this.client = null;
+        }
+    }
 }
 
 class ZkListener {
@@ -190,7 +197,7 @@ class ZkListener {
     public void listenMaster() {
         try {
             NodeCache nodeCache = new NodeCache(this.client, basePath + "/master");
-            MaterListener masterListener = new MaterListener(nodeCache);
+            MasterListener masterListener = new MasterListener(nodeCache);
             nodeCache.getListenable().addListener(masterListener);
             nodeCache.start();
         } catch (Exception e) {
@@ -224,9 +231,9 @@ class ZkListener {
         }
     }
 
-    class MaterListener implements NodeCacheListener {
+    class MasterListener implements NodeCacheListener {
 
-        MaterListener(NodeCache nodeCache) {
+        MasterListener(NodeCache nodeCache) {
             this.nodeCache = nodeCache;
         }
 
