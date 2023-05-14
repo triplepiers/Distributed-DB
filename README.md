@@ -2,7 +2,20 @@
 
 ---
 
-## UPDARE @2023/05/13
+## UPDATE @2023/05/14
+
+- RegionServer 基本完工，工程见 `/regionServer`，接口见 md 文件
+
+    - 把一些操作移到 `@PostConstruct / @PreDestroy` 以确保能够正常访问 dataSource 并在推出前自动关闭 Zookeeper 会话
+
+    - 整体处于 **单机能动** 的状态
+
+- TODO
+
+    1. 前端糊上
+    2. 写一下运行指南
+
+## UPDATE @2023/05/13
 
 1. MASTER 基本完工，工程见 `/master` ，接口和 Zookeeper 节点设计见 md 文件（节点可能不太准）
 2. RegionServer 开了个头

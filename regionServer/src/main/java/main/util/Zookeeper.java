@@ -149,6 +149,27 @@ public class Zookeeper {
         // 注册对 /master 的监听
         this.zkListener.listenMaster();
     }
+
+    // 查看 tables 下共有多少个节点
+    public int getTableNum() {
+        int tot = -1;
+        try {
+            tot = this.client.getChildren().forPath(basePath + "/tables").size();
+        } catch (Exception e) {
+            System.out.println("未能获取 " + basePath + "/tables 下的子节点总数");
+        }
+        return tot;
+    }
+
+    // 向 /tables 下添加新的 table 信息
+    public void addTable(int idx, String tName) {
+        try {
+            this.client.create().withMode(CreateMode.EPHEMERAL).forPath(basePath + "/tables/" + (idx+1), tName.getBytes());
+        } catch (Exception e) {
+            System.out.println("向 zookeeper 插入 ID " + idx + " TABLE " + tName + " 信息时出错");
+        }
+    }
+
     class ZkListener {
 
         public void stopListenMaster() {

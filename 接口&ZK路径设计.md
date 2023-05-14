@@ -99,6 +99,112 @@ Write 操作包括：建立索引、INSERT、UPDATE、DELETE、DROP
     }
     ```
 
+### 1.2 RegionServer 接口
+
+#### 1.2.1 Create Table 接口
+> 需要往 zookeeper 里插入数据，所以单列
+
+- 方法：POST
+
+- 路径：`/new`
+
+- 参数
+    ```json
+    {
+        "tableName": "users",
+        "sql": "建表的完整 sql"
+    }
+    ```
+- 返回样例
+
+    ```text
+    # 正常返回
+    {
+        "status": 200
+    }
+
+    # 异常返回
+    {
+        "status": 204,
+        "msg": "SQL 执行失败"
+    }
+    ```
+
+#### 1.2.2 Select 接口
+> 需要返回查询结果，单列
+
+- 方法：POST
+
+- 路径：`/select`
+
+- 参数
+    ```json
+    {
+        "sql": "查询的完整 sql"
+    }
+    ```
+- 返回样例
+
+    ```text
+    # 正常返回
+    {
+        // 列名信息
+        "meta": [
+            "username",
+            "id",
+            "password"
+        ],
+        // 查询结果 - 每一条记录都是一个 record
+        "data": [
+            [
+                "root",
+                "1",
+                "123456"
+            ],
+            [
+                "admin",
+                "2",
+                "123"
+            ]
+        ],
+        "status": 200
+    }
+
+    # 异常返回
+    {
+        "status": 204,
+        "msg": "SQL 执行失败"
+    }
+    ```
+
+#### 1.2.3 其他 SQL 语句
+> 只返回执行 成功/失败
+
+- 方法：POST
+
+- 路径：`/execute`
+
+- 参数
+    ```json
+    {
+        "sql": "完整 sql"
+    }
+    ```
+- 返回样例
+
+    ```text
+    # 正常返回
+    {
+        "status": 200
+    }
+
+    # 异常返回
+    {
+        "status": 204,
+        "msg": "SQL 执行失败"
+    }
+    ```
+
 
 ## 2 Zookeeper 节点路径
 
