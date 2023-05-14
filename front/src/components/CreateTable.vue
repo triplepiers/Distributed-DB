@@ -10,21 +10,91 @@
       <el-input style="margin: 10px 0;"
       v-model="info" autosize
       type="textarea" placeholder="Columns Info"/>
-      <div class="tip"> );</div>
+      <div class="tip"> )</div>
     </div>
-    <el-button id="btn" type="primary">
+    <div class="line">
+      <el-input style="margin: 10px 0;"
+      v-model="option" autosize
+      type="textarea" placeholder="Options"/>
+      <div class="tip"> ;</div>
+    </div>
+    <el-button id="btn" type="primary" @click="executeSQL">
       执行
     </el-button>
   </div>
 </template>
 
 <script>
+import axios from 'axios'
 export default {
     name: 'CreateTable',
     data() {
       return {
         tableName: '',
-        info: ''
+        info: '',
+        option: 'ENGINE=INNODB DEFAULT CHARSET=utf8'
+      }
+    },
+    methods: {
+      executeSQL() {
+        if(this.tableName === "" || this.info === "") {
+          this.$message({
+            message: "请填写表名和字段信息",
+            type: 'warning'
+          });
+          return
+        }
+
+        // var sql = `CREATE TABLE '${this.tableName}' (${this.info.replaceAll(/[\r\n]/g, ' ')}) ${this.option}`
+        var sql = `CREATE TABLE \`${this.tableName}\` (${this.info.replaceAll(/[\r\n]/g, ' ')})`
+        var tName = this.tableName
+
+        // query Master
+        axios.get(`http://localhost:9090/create?tableName=${tName}`)
+        // axios.get(`http://localhost:9090/create?tableName=test`)
+        .then(
+          res => {
+            console.log(res)
+            if(res.data.status == 204) {
+              this.$message({
+                message: res.data.msg,
+                type: 'warning'
+              });
+            } else if(res.data.status == 200) {
+              console.log(res.data.addr)
+              //向指定的 server 发送数据
+              axios.post(`http://${res.data.addr}/new`,
+                {
+                  tableName: tName,
+                  sql: sql
+                  // tableName: "test",
+                  // sql: "CREATE TABLE `test` (`idtest` INT NOT NULL,PRIMARY KEY (`idtest`))"
+                },
+                {
+                  headers: {
+                    'Content-Type' : 'application/json'
+                  }
+                }
+              ).then(
+                res => {
+                  if(res.data.status == 204) {
+                    this.$message.error(res.data.msg)
+                  } else {
+                    this.$message({
+                      message: '创建成功',
+                      type: 'success'
+                    });
+                  }
+                }
+              )
+            }
+          }
+        )
+
+        // clear
+        this.tableName = ""
+        this.info = ""
+        this.option = "ENGINE=INNODB DEFAULT CHARSET=utf8"
       }
     }
 }

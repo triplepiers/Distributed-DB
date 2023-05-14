@@ -185,16 +185,16 @@ Write 操作包括：建立索引、INSERT、UPDATE、DELETE、DROP
         ],
         // 查询结果 - 每一条记录都是一个 record
         "data": [
-            [
-                "root",
-                "1",
-                "123456"
-            ],
-            [
-                "admin",
-                "2",
-                "123"
-            ]
+            {
+                "username": "root",
+                "id": "1",
+                "password": "123456"
+            },
+            {
+                "username": "admin",
+                "id": "2",
+                "password": "123"
+            },
         ],
         "status": 200
     }

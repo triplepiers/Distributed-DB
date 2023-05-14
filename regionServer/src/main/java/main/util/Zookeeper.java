@@ -37,7 +37,7 @@ public class Zookeeper {
 
     private final String serverID = "1"; // 本 regionServer 的 ServerID
 
-    private final byte[] selfAddr = "127.0.0.1:8081".getBytes(); // 本 regionServer 后端项目监听的端口
+    private final byte[] selfAddr = "127.0.0.1:9091".getBytes(); // 本 regionServer 后端项目监听的端口
 
     private final String zkServerAddr  = "127.0.0.1:2181";
 

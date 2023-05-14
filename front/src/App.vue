@@ -10,7 +10,7 @@
             </div>
             <div class="mid">
                 <div class="sub">可用 TABLE</div>
-                <el-button type="primary" plain>刷新数据</el-button>
+                <el-button type="primary" plain @click="getMeta">刷新数据</el-button>
             </div>
             <div class="bottom">
                 <el-table :data="$store.state.tables" stripe style="width:!00%">
@@ -52,18 +52,35 @@
 </template>
 
 <script>
+import axios from 'axios'
+import { mapMutations } from 'vuex'
 
 export default {
     name: 'App',
     data() {
         return {
-            status: false,
-            // tables: [
-            //     {"name":"passwords","writable":true},
-            //     {"name":"users","writable":true},
-            //     {"name":"t2-1","writable":false}
-            // ]
+            status: false
         }
+    },
+    methods: {
+        ...mapMutations(['UPDATE']),
+        getMeta() {
+            axios.get( 'http://127.0.0.1:9090/meta')
+            .then(
+                res => {
+                        this.status = true
+                        this.UPDATE(res.data.data)
+                    },
+                err => {
+                     this.status = false
+                     this.UPDATE([])
+                }
+            )
+        }
+    },
+    mounted() {
+        // 从 Master 处获取 meta 信息
+        this.getMeta()
     }
 }
 
@@ -75,6 +92,8 @@ export default {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
 a {
@@ -82,7 +101,6 @@ a {
 }
 
 #app {
-    user-select: none;
     width: 100%;
     min-height: 100vh;
     color: #2c3e50;

@@ -9,10 +9,7 @@ import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -20,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 @RestController
+@CrossOrigin
 @SpringBootApplication
 public class MasterApplication {
 
@@ -155,13 +153,13 @@ public class MasterApplication {
             return res;
         }
 
-
+        ArrayList<String> colNames = null;
         // 提取一下 meta 信息
         if(rs != null) {
             try {
                 ResultSetMetaData meta = rs.getMetaData();
                 countCol = meta.getColumnCount();
-                ArrayList<String> colNames = new ArrayList<>();
+                colNames = new ArrayList<>();
                 for(int i = 0 ; i < countCol ; i++) {
 //                    System.out.println(i + " " +  meta.getColumnName(i+1));
                     colNames.add(meta.getColumnName(i+1));
@@ -175,11 +173,13 @@ public class MasterApplication {
 
         // 放一下数据集（每一行都是一个 Array）
         try {
-            ArrayList<ArrayList<String>> result = new ArrayList<>();
+            ArrayList<JSONObject> result = new ArrayList<>();
             while(rs.next()) {
-                ArrayList<String> record = new ArrayList<>();
+//                ArrayList<String> record = new ArrayList<>();
+                JSONObject record = new JSONObject();
                 for(int i = 0 ; i < countCol ; i++) {
-                    record.add(rs.getString(i+1));
+//                    record.add(rs.getString(i+1));
+                    record.put(colNames.get(i), rs.getString(i+1));
                 }
                 result.add(record);
             }
@@ -202,6 +202,7 @@ public class MasterApplication {
     public JSONObject execute(@RequestBody Map<String, String> data) {
         JSONObject res = new JSONObject();
         String sql = data.get("sql");
+        System.out.println("Execute " + sql);
         // 缺少参数
         if (sql == null) {
             res.put("status", 204);

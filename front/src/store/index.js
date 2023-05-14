@@ -5,15 +5,13 @@ const actions = {
 }
 
 const mutations = {
-
+    UPDATE(state, neoTables) {
+        state.tables = neoTables
+    }
 }
 
 const state = {
-    tables: [
-        {"name":"passwords","writable":true},
-        {"name":"users","writable":true},
-        {"name":"t2-1","writable":false}
-    ]
+    tables: []
 }
 
 export default createStore({
