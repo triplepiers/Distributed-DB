@@ -127,7 +127,7 @@ public class Zookeeper {
                 String tName = rs.getString(1);
                 System.out.println(countTable + " " + tName);
                 // 写进 /tables
-                this.client.create().withMode(CreateMode.EPHEMERAL).forPath(basePath + "/tables/" + countTable, tName.getBytes());
+                this.client.create().withMode(CreateMode.EPHEMERAL).forPath(basePath + "/tables/" + tName);
             }
             // 释放连接
             rs.close();
@@ -150,23 +150,21 @@ public class Zookeeper {
         this.zkListener.listenMaster();
     }
 
-    // 查看 tables 下共有多少个节点
-    public int getTableNum() {
-        int tot = -1;
+    // 向 /tables 下添加新的 table 信息
+    public void addTable(String tName) {
         try {
-            tot = this.client.getChildren().forPath(basePath + "/tables").size();
+            this.client.create().withMode(CreateMode.EPHEMERAL).forPath(basePath + "/tables/" + tName);
         } catch (Exception e) {
-            System.out.println("未能获取 " + basePath + "/tables 下的子节点总数");
+            System.out.println("向 zookeeper 添加 TABLE " + tName + " 信息时出错");
         }
-        return tot;
     }
 
-    // 向 /tables 下添加新的 table 信息
-    public void addTable(int idx, String tName) {
+    // 从 /tables 中移除 table 信息
+    public void removeTable(String tName) {
         try {
-            this.client.create().withMode(CreateMode.EPHEMERAL).forPath(basePath + "/tables/" + (idx+1), tName.getBytes());
+            this.client.delete().forPath(basePath + "/tables/" + tName);
         } catch (Exception e) {
-            System.out.println("向 zookeeper 插入 ID " + idx + " TABLE " + tName + " 信息时出错");
+            System.out.println("从 zookeeper 移除 TABLE " + tName + " 信息时出错");
         }
     }
 

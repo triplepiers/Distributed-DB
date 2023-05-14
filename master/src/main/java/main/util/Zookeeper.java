@@ -285,11 +285,13 @@ class ZkListener {
             if (treeCacheEvent.getType() == TreeCacheEvent.Type.NODE_ADDED
                     &&
                     !treeCacheEvent.getData().getPath().equals(basePath + "/tables")) {
-                String tableName = new String(treeCacheEvent.getData().getData());
+                String path[] = new String(treeCacheEvent.getData().getPath()).split("/");
+                String tableName = path[3];
                 regionMeta.tables.add(tableName);
                 System.out.println("new TABLE for " + basePath + " :" + tableName);
             } else if (treeCacheEvent.getType() == TreeCacheEvent.Type.NODE_REMOVED) {
-                String tableName = new String(treeCacheEvent.getData().getData());
+                String path[] = new String(treeCacheEvent.getData().getPath()).split("/");
+                String tableName = path[3];
                 regionMeta.tables.remove(tableName);
                 System.out.println("lost TABLE for " + basePath + " :" + tableName);
             }

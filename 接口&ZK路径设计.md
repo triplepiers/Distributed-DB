@@ -130,7 +130,36 @@ Write 操作包括：建立索引、INSERT、UPDATE、DELETE、DROP
     }
     ```
 
-#### 1.2.2 Select 接口
+#### 1.2.2 DROP Table 接口
+> 需要往 zookeeper 里插入数据，所以单列
+
+- 方法：POST
+
+- 路径：`/drop`
+
+- 参数
+    ```json
+    {
+        "tableName": "users",
+        "sql": "删除的完整 sql"
+    }
+    ```
+- 返回样例
+
+    ```text
+    # 正常返回
+    {
+        "status": 200
+    }
+
+    # 异常返回
+    {
+        "status": 204,
+        "msg": "SQL 执行失败"
+    }
+    ```
+
+#### 1.2.3 Select 接口
 > 需要返回查询结果，单列
 
 - 方法：POST
@@ -177,7 +206,7 @@ Write 操作包括：建立索引、INSERT、UPDATE、DELETE、DROP
     }
     ```
 
-#### 1.2.3 其他 SQL 语句
+#### 1.2.4 其他 SQL 语句
 > 只返回执行 成功/失败
 
 - 方法：POST
@@ -206,6 +235,8 @@ Write 操作包括：建立索引、INSERT、UPDATE、DELETE、DROP
     ```
 
 
+
+
 ## 2 Zookeeper 节点路径
 
 > 非常的简单捏！
@@ -217,8 +248,8 @@ Write 操作包括：建立索引、INSERT、UPDATE、DELETE、DROP
         - (tmp)[id]: "ip:port"
         - (tmp)[id]: "ip:port"
     - (default=0)tables "n_tables"
-        - (tmp)t1 "table_name"
-        - (tmp)t2 "table_name"
+        - (tmp)table_name1
+        - (tmp)table_name2
 - region2
     - （下略，结构相同）
 ```
@@ -235,7 +266,7 @@ hashMap
     - "slaves" List<String>
         - connectString 1
     - "tables" List<String>
-        - tableName 1
+        - tableName1
     - "router" int[2]
         - n_slave
         - cur_slave (累加实现轮询)

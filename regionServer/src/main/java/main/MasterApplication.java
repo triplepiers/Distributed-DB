@@ -86,12 +86,43 @@ public class MasterApplication {
         }
 
         // 往 /tables 下插入新的记录
-        // 1. 查看 tables 下有多少个节点
-        int idx = this.zk.getTableNum();
-        // 2. append
-        if(idx != -1) { // 没有出错
-            this.zk.addTable(idx, tName);
+        this.zk.addTable(tName);
+
+        res.put("status", 200);
+        return res;
+    }
+
+    // drop Table 请求（需要更新 zk）
+    @RequestMapping("/drop")
+    public JSONObject dropTable(@RequestBody Map<String, String> data) {
+        JSONObject res = new JSONObject();
+        String tName = data.get("tableName");
+        String sql = data.get("sql");
+        // 缺少参数
+        if (tName == null || sql == null) {
+            res.put("status", 204);
+            res.put("msg", "缺少必要参数");
+            return res;
         }
+        System.out.println("DROP TABLE: " + data.get("tableName"));
+
+        // 执行 sql
+        try {
+            Connection conn = dataSource.getConnection();
+            Statement stmt = conn.createStatement();
+            // executeQuery 必须产生 resultSet，此处使用 execute
+            stmt.execute(sql);
+            // 释放连接
+            stmt.close();
+            conn.close();
+        } catch (Exception e) {
+            res.put("status", 204);
+            res.put("msg", "SQL 执行失败");
+            return res;
+        }
+
+        // 往 /tables 下插入新的记录
+        this.zk.removeTable(tName);
 
         res.put("status", 200);
         return res;
