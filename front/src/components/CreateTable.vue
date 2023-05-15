@@ -52,18 +52,17 @@ export default {
         var tName = this.tableName
 
         // query Master
-        axios.get(`http://localhost:9090/create?tableName=${tName}`)
+        axios.get(`/master/create?tableName=${tName}`)
         // axios.get(`http://localhost:9090/create?tableName=test`)
         .then(
           res => {
-            console.log(res)
             if(res.data.status == 204) {
               this.$message({
                 message: res.data.msg,
                 type: 'warning'
               });
             } else if(res.data.status == 200) {
-              console.log(res.data.addr)
+              console.log("route to " + res.data.addr)
               //向指定的 server 发送数据
               axios.post(`http://${res.data.addr}/new`,
                 {

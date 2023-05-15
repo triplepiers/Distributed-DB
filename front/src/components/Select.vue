@@ -58,7 +58,7 @@ export default {
           return
         }
 
-        axios.get(`http://localhost:9090/read?tableName=${this.tableName}`)
+        axios.get(`/master/read?tableName=${this.tableName}`)
         .then(
           res => {
             if(res.data.status == 204) {
@@ -83,7 +83,6 @@ export default {
                       this.result.meta = []
                       this.result.res = []
                     } else {
-                      console.log(res.data)
                       this.result.meta = res.data.meta
                       this.result.res = res.data.data
                       this.$message({

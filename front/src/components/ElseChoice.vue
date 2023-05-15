@@ -46,17 +46,16 @@ export default {
         }
 
         // query Master
-        axios.get(`http://localhost:9090/write?tableName=${this.tableName}`)
+        axios.get(`/master/write?tableName=${this.tableName}`)
         .then(
           res => {
-              console.log(res)
               if(res.data.status == 204) {
                 this.$message({
                   message: res.data.msg,
                   type: 'warning'
                 });
               } else if(res.data.status == 200) {
-                console.log(res.data.addr)
+                console.log("route to " + res.data.addr)
                 //向指定的 server 发送数据
                 axios.post(`http://${res.data.addr}/execute`,
                   {

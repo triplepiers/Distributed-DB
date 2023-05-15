@@ -69,8 +69,7 @@ export default {
             pubsub.publish('refresh', "")
         },
         getMeta() {
-            console.log("get meta")
-            axios.get( 'http://127.0.0.1:9090/meta')
+            axios.get( '/master/meta')
             .then(
                 res => {
                         this.status = true
