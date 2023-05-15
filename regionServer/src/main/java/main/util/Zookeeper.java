@@ -34,6 +34,8 @@ public class Zookeeper {
         System.out.println(this.zkServerAddr);
     }
 
+    private Boolean isMaster = false;
+
     private DataSource dataSource;
 
     private final String basePath = "/region1"; // 本 regionServer 所在的 regionID
@@ -48,6 +50,28 @@ public class Zookeeper {
 
     private CuratorFramework client;
 
+    // 判断当 server 是否为 Master 节点
+    public Boolean checkMaster() {
+        return this.isMaster;
+    }
+
+
+    // 获取所有的 slave 地址
+    public List<String> getSlaves() {
+        // 获取所有子节点路径
+        List<String> slavePaths = new ArrayList<>();
+        try {
+            List<String> childPaths = this.client.getChildren().forPath(basePath + "/slaves");
+            for (String path : childPaths) {
+                String data = new String(this.client.getData().forPath(basePath + "/slaves/" + path));
+                slavePaths.add(data);
+            }
+        } catch (Exception e) {
+            System.out.println("slave地址获取失败");
+            System.out.println(e);
+        }
+        return slavePaths;
+    }
 
     public void connect() {
         System.out.println("Trying to connect Zk Sever @" + zkServerAddr);
@@ -56,12 +80,13 @@ public class Zookeeper {
         this.client = CuratorFrameworkFactory.newClient(zkServerAddr, 5000, 5000, retryPolicy);
         client.start();
 //
-//        // 创建持久化节点
-//        // client.create().withMode(CreateMode.EPHEMERAL).forPath("/test", "init test".getBytes());
+        // 创建持久化节点
         // 读取创建结果
         try {
+//            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/region1/slaves/1", selfAddr);
             Stat stat = new Stat();
             System.out.println("data @ /test = " + new String(client.getData().storingStatIn(stat).forPath("/test")));
+//            System.out.println("data @ /test = " + new String(client.getData().storingStatIn(stat).forPath("/region1/slaves/1")));
             System.out.println("if you can see the return value, then you're successfully connected.");
         } catch (Exception e) {
             System.out.println(e);
@@ -93,6 +118,7 @@ public class Zookeeper {
         } catch (Exception e) {
             System.out.println("检查 MASTER 是否存在时出错");
         }
+
     }
 
 
@@ -101,6 +127,7 @@ public class Zookeeper {
         // 注册临时节点
         try {
             this.client.create().withMode(CreateMode.EPHEMERAL).forPath(basePath + "/master", this.selfAddr);
+            this.isMaster = true;
         } catch (Exception e) {
             System.out.println("未能成为 MASTER");
             // be slave
@@ -109,9 +136,10 @@ public class Zookeeper {
         }
 
         System.out.println("current server is a MASTER");
+
         // 关闭对 /master 的监听
         this.zkListener.stopListenMaster();
-        // 删除对应的 slave 节点
+//        // 删除对应的 slave 节点
         try {
             this.client.delete().forPath(basePath + "/slaves/" + serverID);
         } catch (Exception e) {}
@@ -148,6 +176,7 @@ public class Zookeeper {
         // 把自己的 ID 写到 /slaves 下
         try {
             this.client.create().withMode(CreateMode.EPHEMERAL).forPath(basePath + "/slaves/" + serverID, selfAddr);
+            this.isMaster = false;
         } catch (Exception e) {}
         // 注册对 /master 的监听
         this.zkListener.listenMaster();

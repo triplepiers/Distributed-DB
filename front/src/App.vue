@@ -69,6 +69,7 @@ export default {
             pubsub.publish('refresh', "")
         },
         getMeta() {
+            console.log("get meta")
             axios.get( '/master/meta')
             .then(
                 res => {

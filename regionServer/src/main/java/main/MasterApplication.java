@@ -8,12 +8,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import javax.sql.DataSource;
 import java.net.InetAddress;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -56,11 +61,23 @@ public class MasterApplication {
         }
     }
 
-
+    @RequestMapping("/trySync")
+    public String testSync() {
+        this.sync("this is sql");
+        return "begin";
+    }
 
     @RequestMapping("/")
     public String hello() {
         return "hello world";
+    }
+
+    @RequestMapping("/test")
+    public JSONObject test(@RequestBody Map<String, String> data) {
+        JSONObject ans = new JSONObject();
+        String sql = data.get("sql");
+        ans.put("msg", "收到 sync" + sql);
+        return ans;
     }
 
     // 关闭 zookeeper 会话（否则临时节点不能正常销毁）
@@ -95,6 +112,8 @@ public class MasterApplication {
             // 释放连接
             stmt.close();
             conn.close();
+            // 同步
+            sync(sql);
         } catch (Exception e) {
             res.put("status", 204);
             res.put("msg", "SQL 执行失败");
@@ -131,6 +150,8 @@ public class MasterApplication {
             // 释放连接
             stmt.close();
             conn.close();
+            // 同步
+            sync(sql);
         } catch (Exception e) {
             res.put("status", 204);
             res.put("msg", "SQL 执行失败");
@@ -193,10 +214,8 @@ public class MasterApplication {
         try {
             ArrayList<JSONObject> result = new ArrayList<>();
             while(rs.next()) {
-//                ArrayList<String> record = new ArrayList<>();
                 JSONObject record = new JSONObject();
                 for(int i = 0 ; i < countCol ; i++) {
-//                    record.add(rs.getString(i+1));
                     record.put(colNames.get(i), rs.getString(i+1));
                 }
                 result.add(record);
@@ -221,6 +240,7 @@ public class MasterApplication {
         JSONObject res = new JSONObject();
         String sql = data.get("sql");
         System.out.println("Execute " + sql);
+
         // 缺少参数
         if (sql == null) {
             res.put("status", 204);
@@ -236,6 +256,8 @@ public class MasterApplication {
             // 释放连接
             stmt.close();
             conn.close();
+            // 同步
+            sync(sql);
         } catch (Exception e) {
             res.put("status", 204);
             res.put("msg", "SQL 执行失败");
@@ -246,4 +268,31 @@ public class MasterApplication {
         return res;
     }
 
+    // 向从节点同步
+    private void sync(String sql) {
+        // 如果是主节点，向从节点转发 sql 操作
+        if(zk.checkMaster()) {
+            System.out.println("ok sync");
+            List<String> slavePaths = zk.getSlaves();
+            for(String slaveAddr : slavePaths) {
+                // 发送 POST 请求
+                String url = "http://" +slaveAddr + "/execute";
+                // 构建参数
+                JSONObject params = new JSONObject();
+                params.put("sql", sql);
+                // 构建 header
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+
+                HttpEntity<JSONObject> httpEntity = new HttpEntity<>(params, headers);
+                // 发起请求
+                RestTemplate client = new RestTemplate();
+                client.postForEntity(url, httpEntity, JSONObject.class);
+                // 这里没有管 slave 的回应（管发不管执行）
+    //            JSONObject ans = client.postForEntity(url, httpEntity, JSONObject.class).getBody();
+    //            assert ans != null;
+    //            System.out.println("answer = " + ans.toJSONString());
+            }
+        }
+    }
 }
