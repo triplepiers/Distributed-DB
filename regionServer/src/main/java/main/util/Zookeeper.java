@@ -27,9 +27,11 @@ import java.util.function.Function;
 
 public class Zookeeper {
 
-    public Zookeeper(DataSource dataSource, String addr) {
+    public Zookeeper(DataSource dataSource, String selfAddr, String zkServerIP) {
         this.dataSource = dataSource;
-        this.selfAddr = addr.getBytes();
+        this.selfAddr = selfAddr.getBytes();
+        this.zkServerAddr = zkServerIP + ":2181";
+        System.out.println(this.zkServerAddr);
     }
 
     private DataSource dataSource;
@@ -40,7 +42,7 @@ public class Zookeeper {
 
     private byte[] selfAddr; // 本 regionServer 后端项目监听的地址
 
-    private final String zkServerAddr  = "127.0.0.1:2181";
+    private String zkServerAddr; //  = "127.0.0.1:2181";
 
     private ZkListener zkListener = null;
 

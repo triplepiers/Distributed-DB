@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import main.util.Zookeeper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.net.InetAddress;
 
 @RestController
 @CrossOrigin
@@ -24,12 +27,25 @@ public class MasterApplication {
         SpringApplication.run(MasterApplication.class, args);
     }
 
+    // 用来获取配置文件中的端口号
+    @Value("${server.port}")
+    private int port;
+
     @PostConstruct
     public void init() {
-        // Zookeeper 连接测试
-        Zookeeper zk = new Zookeeper(MasterApplication.maxRegion);
-        MasterApplication.zk = zk;
-        zk.connect();
+        // 输出本机信息
+        try {
+            String IP = InetAddress.getLocalHost().getHostAddress();
+            System.out.println("Master & Zookeeper are @"+ IP);
+            System.out.println("Master listening Port: " + this.port);
+            // Zookeeper 连接测试
+            Zookeeper zk = new Zookeeper(MasterApplication.maxRegion, IP);
+            MasterApplication.zk = zk;
+            zk.connect();
+        } catch (Exception e) {
+            System.out.println("IP信息获取失败");
+        }
+
     }
 
     @PreDestroy

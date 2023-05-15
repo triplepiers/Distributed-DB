@@ -15,6 +15,7 @@ import java.net.InetAddress;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Scanner;
 
 @RestController
 @CrossOrigin
@@ -36,19 +37,23 @@ public class MasterApplication {
 
     @PostConstruct
     public void init() {
+        // 设置 zkServer 地址
+        Scanner in = new Scanner(System.in);
+        System.out.print("Please input zkServer IP: ");
+        String zkServerIP = in.next();
+
         // 测试动态获取本机 ip
         try {
             String IP = InetAddress.getLocalHost().getHostAddress();
-            String addr = IP + ":" + this.port;
-            System.out.println("Current Server is @"+ addr);
+            String selfAddr = IP + ":" + this.port;
+            System.out.println("Current Server is @"+ selfAddr);
             // Zookeeper 连接测试
-            Zookeeper zk = new Zookeeper(dataSource, addr);
+            Zookeeper zk = new Zookeeper(dataSource, selfAddr, zkServerIP);
             MasterApplication.zk = zk;
             zk.connect();
         } catch (Exception e) {
             System.out.println("初始化失败");
         }
-
     }
 
 

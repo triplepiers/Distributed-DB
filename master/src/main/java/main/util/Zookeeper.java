@@ -16,24 +16,24 @@ import java.util.List;
 
 public class Zookeeper {
 
-    public Zookeeper(int maxRegion) {
+    public Zookeeper(int maxRegion, String zkServerIP) {
         this.maxRegion = maxRegion;
+        this.zkServer = zkServerIP + ":2181";
     }
 
     private int maxRegion;
-    private final String serverIP = "127.0.0.1";
-    private final String serverPort = "2181";
+
+    private String zkServer;
 
     private ArrayList<RegionMeta> meta = new ArrayList<>();
 
     private CuratorFramework client;
 
     public void connect() {
-        String connectStr = this.serverIP + ":" + this.serverPort;
-        System.out.println("Trying to connect Zk Sever @" + connectStr);
+        System.out.println("Trying to connect Zk Sever @" + zkServer);
 
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(3000, 1);
-        this.client = CuratorFrameworkFactory.newClient(connectStr, 5000, 5000, retryPolicy);
+        this.client = CuratorFrameworkFactory.newClient(zkServer, 5000, 5000, retryPolicy);
         this.client.start();
 
         // 初始化持久化节点目录
