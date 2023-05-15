@@ -18,15 +18,6 @@
     - 相当于 client 实现备份（非常离谱）
     - 需要改接口（master 可能需要返回 region 中 master + slaves 的地址列表）
 
-
-### 1.2 初始化脚本
-
-1. MySQL 的初始化脚本
-
-    - `distributed` database 的建立
-    - 可以放 1-2 张样本表
-
-
 ## 2 待改进
 
 1. 多线程
