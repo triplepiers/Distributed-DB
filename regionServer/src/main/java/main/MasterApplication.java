@@ -1,17 +1,17 @@
 package main;
 
-import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import main.util.Zookeeper;
-import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.*;
 
 import javax.sql.DataSource;
+import java.net.InetAddress;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Map;
@@ -23,19 +23,32 @@ public class MasterApplication {
 
     private static Zookeeper zk;
 
+    // 用来获取配置文件中的端口号
+    @Value("${server.port}")
+    private int port;
+
     @Autowired
     DataSource dataSource;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         SpringApplication.run(MasterApplication.class, args);
     }
 
     @PostConstruct
     public void init() {
-        // Zookeeper 连接测试
-        Zookeeper zk = new Zookeeper(dataSource);
-        MasterApplication.zk = zk;
-        zk.connect();
+        // 测试动态获取本机 ip
+        try {
+            String IP = InetAddress.getLocalHost().getHostAddress();
+            String addr = IP + ":" + this.port;
+            System.out.println("Current Server is @"+ addr);
+            // Zookeeper 连接测试
+            Zookeeper zk = new Zookeeper(dataSource, addr);
+            MasterApplication.zk = zk;
+            zk.connect();
+        } catch (Exception e) {
+            System.out.println("初始化失败");
+        }
+
     }
 
 
