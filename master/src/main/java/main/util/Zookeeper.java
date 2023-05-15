@@ -7,6 +7,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.*;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.zookeeper.data.Stat;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,36 +36,79 @@ public class Zookeeper {
         this.client = CuratorFrameworkFactory.newClient(connectStr, 5000, 5000, retryPolicy);
         this.client.start();
 
-        // 创建持久化节点
-        // client.create().withMode(CreateMode.EPHEMERAL).forPath("/test", "init test".getBytes());
+        // 初始化持久化节点目录
+        this.initZk();
+
         // 读取创建结果
-//        Stat stat = new Stat();
-//        System.out.println("data @ /test = " + new String(client.getData().storingStatIn(stat).forPath("/test")));
-//        System.out.println("if you can see the return value, then you're successfully connected.");
+        Stat stat = new Stat();
+        try {
+            System.out.println("data @ /test = " + new String(client.getData().storingStatIn(stat).forPath("/test")));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("if you can see the return value, then you're successfully connected.");
 
         // INIT
         this.initMeta();
+    }
 
+    // 在 zookeeper 中创建基础路径
+    public void initZk() {
+        System.out.println("initZk");
+        try {
+            // /test
+            createNode("/test", "hello!");
+            // regions
+            for (int i = 1; i <= maxRegion ; i++) {
+                createNode("/region" + i + "/tables");
+                createNode("/region" + i + "/slaves");
+            }
+        } catch (Exception e) {
+            System.out.println("初始化 zookeeper 节点结构时出错");
+        }
+    }
 
-//        this.client.close();
+    // 有内容的节点
+    public void createNode(String path, String content) throws Exception {
+        if(!exist(path)) {
+            System.out.println("create " + path);
+            client.create().creatingParentsIfNeeded().forPath(path, content.getBytes());
+        }
+    }
+    // 无内容节点
+    public void createNode(String path) throws Exception {
+        if(!exist(path)) {
+            client.create().creatingParentsIfNeeded().forPath(path, "".getBytes());
+        }
+    }
+
+    public Boolean exist(String path) {
+        Boolean isExsit = false;
+        try {
+            Stat stat = this.client.checkExists().forPath(path);
+            isExsit = stat != null;
+        } catch (Exception e) {
+            System.out.println("获取" + path + "存在情况时出错");
+        }
+        return isExsit;
     }
 
     // 获取指定路径下所有节点的[数据]！
-    public List<String> getChildsData(String parentPath) {
-        // 获取所有子节点路径
-        List<String> childsData = new ArrayList<>();
-        try {
-            List<String> childsPath = this.client.getChildren().forPath(parentPath);
-            for (String path : childsPath) {
-                String data = new String(this.client.getData().forPath(parentPath + "/" + path));
-                childsData.add(data);
-                System.out.println("data @" + path + " = " + data);
-            }
-        } catch (Exception e) {
-            System.out.println("子节点数据获取失败");
-        }
-        return childsData;
-    }
+//    public List<String> getChildsData(String parentPath) {
+//        // 获取所有子节点路径
+//        List<String> childsData = new ArrayList<>();
+//        try {
+//            List<String> childsPath = this.client.getChildren().forPath(parentPath);
+//            for (String path : childsPath) {
+//                String data = new String(this.client.getData().forPath(parentPath + "/" + path));
+//                childsData.add(data);
+//                System.out.println("data @" + path + " = " + data);
+//            }
+//        } catch (Exception e) {
+//            System.out.println("子节点数据获取失败");
+//        }
+//        return childsData;
+//    }
 
     // 初始化当前数据集的 meta 信息
     public void initMeta() {

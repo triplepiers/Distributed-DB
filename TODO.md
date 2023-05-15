@@ -26,17 +26,6 @@
     - `distributed` database 的建立
     - 可以放 1-2 张样本表
 
-2. Zookeeper 的初始化脚本（如果后面改进了就不用写）
-
-    - 创建持久化节点
-        ```text
-        - region1
-            - tables
-            - slaves
-        - region2
-            - tables
-            - slaves
-        ```
 
 ## 2 待改进
 
@@ -44,17 +33,14 @@
 
     Master & RegionServer 目前都是单线程工作
 
-2. 自动初始化
 
-    Master 现在默认 1.2 中提到的路径都在，可以全改成 notExist -> createNode 的版本（更友好）
-
-3. 根据命令行参数动态修改启动的 port（好像没必要）
+2. 根据命令行参数动态修改启动的 port（好像没必要）
 
     - Copy 2 中有一个“自动获取空闲端口号”的功能
     - 不过 SpringBoot 的一键启动的话应该没办法改？
 
 
-4. 更大更好更强的均衡策略
+3. 更大更好更强的均衡策略
 
     - 目前每台 Server 在哪个 Region 是写死的（大雾），可以设计下策略（可能又要大改接口）
     - 目前也写死了只有 2 个 Region
@@ -62,6 +48,6 @@
         - Copy 2 上线直接把旧表全删了，然后整个 copy 新的
     - 负载太大的时候整张 table 换到另一个 region 去
 
-5. 前端
+4. 前端
 
     - 没事干可以定期向 Master 请求一下 Meta 数据（然后显示一下时间）
