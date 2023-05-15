@@ -26,6 +26,8 @@
 
 <script>
 import axios from 'axios'
+import pubsub from 'pubsub-js'
+
 export default {
     name: 'CreateTable',
     data() {
@@ -84,6 +86,8 @@ export default {
                       message: '创建成功',
                       type: 'success'
                     });
+                    // 刷新 meta
+                    pubsub.publish('refresh', "")
                   }
                 }
               )

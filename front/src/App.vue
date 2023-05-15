@@ -10,7 +10,7 @@
             </div>
             <div class="mid">
                 <div class="sub">可用 TABLE</div>
-                <el-button type="primary" plain @click="getMeta">刷新数据</el-button>
+                <el-button type="primary" plain @click="handleClick">刷新数据</el-button>
             </div>
             <div class="bottom">
                 <el-table :data="$store.state.tables" stripe style="width:!00%">
@@ -54,6 +54,7 @@
 <script>
 import axios from 'axios'
 import { mapMutations } from 'vuex'
+import pubsub from 'pubsub-js'
 
 export default {
     name: 'App',
@@ -64,7 +65,11 @@ export default {
     },
     methods: {
         ...mapMutations(['UPDATE']),
+        handleClick() {
+            pubsub.publish('refresh', "")
+        },
         getMeta() {
+            console.log("get meta")
             axios.get( 'http://127.0.0.1:9090/meta')
             .then(
                 res => {
@@ -81,6 +86,14 @@ export default {
     mounted() {
         // 从 Master 处获取 meta 信息
         this.getMeta()
+        // 订阅订阅可能涉及 tables 列表变化的信息
+        this.pubID = pubsub.subscribe('refresh', () => {
+            this.getMeta()
+        })
+    },
+    beforeDestroy() {
+        // 取消订阅
+        pubsub.unsubscribe(this.pubID)
     }
 }
 

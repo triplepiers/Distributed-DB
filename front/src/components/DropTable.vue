@@ -16,6 +16,7 @@
 
 <script>
 import axios from 'axios'
+import pubsub from 'pubsub-js'
 
 export default {
     name: 'DropTable',
@@ -81,6 +82,8 @@ export default {
                         message: '删除成功',
                         type: 'success'
                       });
+                      // 刷新 meta
+                      pubsub.publish('refresh', "")
                     }
                   }
                 )
