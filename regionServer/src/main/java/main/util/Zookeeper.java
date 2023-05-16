@@ -139,7 +139,7 @@ public class Zookeeper {
 
         // 关闭对 /master 的监听
         this.zkListener.stopListenMaster();
-//        // 删除对应的 slave 节点
+        // 删除对应的 slave 节点
         try {
             this.client.delete().forPath(basePath + "/slaves/" + serverID);
         } catch (Exception e) {}

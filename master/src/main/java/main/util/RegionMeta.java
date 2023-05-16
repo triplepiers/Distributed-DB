@@ -1,6 +1,7 @@
 package main.util;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -9,7 +10,7 @@ public class RegionMeta {
     public String master = ""; // master 的 connectString
 
     // 存储的所有 table 名称
-    public Set<String> tables = new TreeSet<>();
+    public List<String> tables = new ArrayList<>();
 
     // 路由相关信息
     public ArrayList<String> slaves = new ArrayList<>(); // 每个 slave 的 connectString

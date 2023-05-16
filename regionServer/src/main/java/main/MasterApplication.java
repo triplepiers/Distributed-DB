@@ -36,6 +36,8 @@ public class MasterApplication {
     @Autowired
     DataSource dataSource;
 
+    private int countVisit = 0;
+
     public static void main(String[] args) {
         SpringApplication.run(MasterApplication.class, args);
     }
@@ -61,6 +63,13 @@ public class MasterApplication {
         }
     }
 
+    // 返回累积的访问数量
+    @RequestMapping("/count")
+    public int getCountVisit() {
+        int val = this.countVisit;
+        this.countVisit = 0;
+        return val;
+    }
 
     @RequestMapping("/")
     public String hello() {
@@ -78,6 +87,7 @@ public class MasterApplication {
     // create Table 请求（需要更新 zk）
     @RequestMapping("/new")
     public JSONObject createTable(@RequestBody Map<String, String> data) {
+        this.countVisit += 1;
         JSONObject res = new JSONObject();
         String tName = data.get("tableName");
         String sql = data.get("sql");
@@ -120,6 +130,7 @@ public class MasterApplication {
     // drop Table 请求（需要更新 zk）
     @RequestMapping("/drop")
     public JSONObject dropTable(@RequestBody Map<String, String> data) {
+        this.countVisit += 1;
         JSONObject res = new JSONObject();
         String tName = data.get("tableName");
         String sql = data.get("sql");
@@ -160,6 +171,7 @@ public class MasterApplication {
     // Select 操作需要统一格式后输出（首行附带 key meta 信息）
     @RequestMapping("/select")
     public JSONObject select(@RequestBody Map<String, String> data) {
+        this.countVisit += 1;
         JSONObject res = new JSONObject();
         String sql = data.get("sql");
         // 缺少参数
@@ -229,6 +241,7 @@ public class MasterApplication {
     // 只返回 成功/失败（感觉 execute 可以单独封装一下）
     @RequestMapping("/execute")
     public JSONObject execute(@RequestBody Map<String, String> data) {
+        this.countVisit += 1;
         JSONObject res = new JSONObject();
         String sql = data.get("sql");
         System.out.println("Execute " + sql);

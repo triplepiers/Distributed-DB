@@ -94,21 +94,25 @@ public class Zookeeper {
     }
 
     // 获取指定路径下所有节点的[数据]！
-//    public List<String> getChildsData(String parentPath) {
-//        // 获取所有子节点路径
-//        List<String> childsData = new ArrayList<>();
-//        try {
-//            List<String> childsPath = this.client.getChildren().forPath(parentPath);
-//            for (String path : childsPath) {
-//                String data = new String(this.client.getData().forPath(parentPath + "/" + path));
-//                childsData.add(data);
-//                System.out.println("data @" + path + " = " + data);
-//            }
-//        } catch (Exception e) {
-//            System.out.println("子节点数据获取失败");
-//        }
-//        return childsData;
-//    }
+    public List<String> getChildsData(String parentPath) {
+        // 获取所有子节点路径
+        List<String> childsData = new ArrayList<>();
+        try {
+            List<String> childsPath = this.client.getChildren().forPath(parentPath);
+            for (String path : childsPath) {
+                String data = new String(this.client.getData().forPath(parentPath + "/" + path));
+                childsData.add(data);
+                System.out.println("data @" + path + " = " + data);
+            }
+        } catch (Exception e) {
+            System.out.println("子节点数据获取失败");
+        }
+        return childsData;
+    }
+
+    public List<String> getTables(int regionId) {
+        return meta.get(regionId-1).tables;
+    }
 
     // 初始化当前数据集的 meta 信息
     public void initMeta() {
@@ -134,6 +138,21 @@ public class Zookeeper {
             }
         }
         return false;
+    }
+
+    // 返回 region 下所有服务器列表信息
+    public List<String> getServers(int regionId) {
+        String basePath = "/region" + regionId;
+
+        // slaves
+        List<String> res = this.getChildsData(basePath + "/slaves");
+        // master
+        try {
+            // master
+            res.add(new String(this.client.getData().forPath(basePath + "/master")));
+        } catch (Exception e) {}
+
+        return res;
     }
 
     // 是否存在可写的 Region
