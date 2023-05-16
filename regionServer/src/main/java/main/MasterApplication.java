@@ -61,24 +61,12 @@ public class MasterApplication {
         }
     }
 
-    @RequestMapping("/trySync")
-    public String testSync() {
-        this.sync("this is sql");
-        return "begin";
-    }
 
     @RequestMapping("/")
     public String hello() {
         return "hello world";
     }
 
-    @RequestMapping("/test")
-    public JSONObject test(@RequestBody Map<String, String> data) {
-        JSONObject ans = new JSONObject();
-        String sql = data.get("sql");
-        ans.put("msg", "收到 sync" + sql);
-        return ans;
-    }
 
     // 关闭 zookeeper 会话（否则临时节点不能正常销毁）
     @PreDestroy
@@ -121,7 +109,9 @@ public class MasterApplication {
         }
 
         // 往 /tables 下插入新的记录
-        this.zk.addTable(tName);
+        if(zk.checkMaster()) {
+            this.zk.addTable(tName);
+        }
 
         res.put("status", 200);
         return res;
@@ -159,7 +149,9 @@ public class MasterApplication {
         }
 
         // 往 /tables 下插入新的记录
-        this.zk.removeTable(tName);
+        if(zk.checkMaster()) {
+            this.zk.removeTable(tName);
+        }
 
         res.put("status", 200);
         return res;
