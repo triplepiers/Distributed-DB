@@ -3,6 +3,7 @@ package main;
 import com.alibaba.fastjson2.JSONObject;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import main.util.Checksum;
 import main.util.Zookeeper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -121,6 +122,7 @@ public class MasterApplication {
         // 往 /tables 下插入新的记录
         if(zk.checkMaster()) {
             this.zk.addTable(tName);
+            this.zk.checkTable(tName);
         }
 
         res.put("status", 200);
@@ -162,6 +164,7 @@ public class MasterApplication {
         // 往 /tables 下插入新的记录
         if(zk.checkMaster()) {
             this.zk.removeTable(tName);
+            this.zk.checkTable(tName);
         }
 
         res.put("status", 200);
@@ -181,6 +184,7 @@ public class MasterApplication {
             return res;
         }
 
+        Checksum c = new Checksum(dataSource);
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
@@ -196,42 +200,74 @@ public class MasterApplication {
             return res;
         }
 
-        ArrayList<String> colNames = null;
-        // 提取一下 meta 信息
-        if(rs != null) {
-            try {
-                ResultSetMetaData meta = rs.getMetaData();
-                countCol = meta.getColumnCount();
-                colNames = new ArrayList<>();
-                for(int i = 0 ; i < countCol ; i++) {
-//                    System.out.println(i + " " +  meta.getColumnName(i+1));
-                    colNames.add(meta.getColumnName(i+1));
-                }
-                res.put("meta", colNames);
-            } catch (Exception e) {
-                System.out.println("提取 resultSet Meta 信息时出错");
-                System.out.println(e);
-            }
+        // 转发 select 查询语句
+        // JSONObject[] checksumList = new JSONObject[zk.getSlaves().size()];
+        List<JSONObject> checksumList = new ArrayList<JSONObject>();
+        List<String> slavePaths = zk.getSlaves();
+        Integer slavesNum = slavePaths.size();
+        for(String slaveAddr : slavePaths) {
+            // 发送 POST 请求
+            String url = "http://" +slaveAddr + "/vote";
+            // 构建参数
+            JSONObject params = new JSONObject();
+            params.put("sql", sql);
+            // 构建 header
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<JSONObject> httpEntity = new HttpEntity<>(params, headers);
+            // 发起请求
+            RestTemplate client = new RestTemplate();
+            // 这里没有管 slave 的回应（管发不管执行）
+            JSONObject ans = client.postForEntity(url, httpEntity, JSONObject.class).getBody();
+            checksumList.add(ans);
         }
 
-        // 放一下数据集（每一行都是一个 Array）
-        try {
-            ArrayList<JSONObject> result = new ArrayList<>();
-            while(rs.next()) {
-                JSONObject record = new JSONObject();
-                for(int i = 0 ; i < countCol ; i++) {
-                    record.put(colNames.get(i), rs.getString(i+1));
+        Integer myChecksum = c.getCRC4result(rs);
+        Integer vote = 0;
+        for (JSONObject ans : checksumList) {
+            if (ans.get("data").equals(myChecksum)) vote++;
+        }
+        System.out.println("投票总数：" + vote);
+
+        ArrayList<String> colNames = null;
+        if( vote >= slavesNum/2+1) {
+            // 提取一下 meta 信息
+            if(rs != null) {
+                try {
+                    ResultSetMetaData meta = rs.getMetaData();
+                    countCol = meta.getColumnCount();
+                    colNames = new ArrayList<>();
+                    for(int i = 0 ; i < countCol ; i++) {
+//                    System.out.println(i + " " +  meta.getColumnName(i+1));
+                        colNames.add(meta.getColumnName(i+1));
+                    }
+                    res.put("meta", colNames);
+                } catch (Exception e) {
+                    System.out.println("提取 resultSet Meta 信息时出错");
+                    System.out.println(e);
                 }
-                result.add(record);
             }
-            res.put("data", result);
+            // 放一下数据集（每一行都是一个 Array）
+            try {
+                ArrayList<JSONObject> result = new ArrayList<>();
+                while(rs.next()) {
+                    JSONObject record = new JSONObject();
+                    for(int i = 0 ; i < countCol ; i++) {
+                        record.put(colNames.get(i), rs.getString(i+1));
+                    }
+                    result.add(record);
+                }
+                res.put("data", result);
 
-            // 释放连接
-            rs.close();
-            stmt.close();
-            conn.close();
-        } catch (Exception e) {
-
+                // 释放连接
+                rs.close();
+                stmt.close();
+                conn.close();
+            } catch (Exception e) {}
+        } else {
+            res.put("status", 204);
+            res.put("msg", "投票失败");
         }
 
         res.put("status", 200);
@@ -244,6 +280,7 @@ public class MasterApplication {
         this.countVisit += 1;
         JSONObject res = new JSONObject();
         String sql = data.get("sql");
+        String tName = data.get("tableName");
         System.out.println("Execute " + sql);
 
         // 缺少参数
@@ -269,9 +306,15 @@ public class MasterApplication {
             return res;
         }
 
+        if(zk.checkMaster()) {
+            this.zk.checkTable(tName);
+        }
+
         res.put("status", 200);
         return res;
     }
+
+
 
     // 向从节点同步
     private void sync(String sql) {
@@ -299,5 +342,35 @@ public class MasterApplication {
     //            System.out.println("answer = " + ans.toJSONString());
             }
         }
+    }
+    // Vote
+    @RequestMapping("/vote")
+    public JSONObject vote(@RequestBody Map<String, String> data) {
+        JSONObject res = new JSONObject();
+        String sql = data.get("sql");
+        // 缺少参数
+        if (sql == null) {
+            res.put("status", 204);
+            res.put("msg", "缺少必要参数");
+            return res;
+        }
+        Checksum c = new Checksum(dataSource);
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        int countCol = -1;
+        // 尝试执行一下
+        try {
+            conn = dataSource.getConnection();
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery(sql);
+        } catch (Exception e) {
+            res.put("status", 204);
+            res.put("msg", "SQL 执行失败");
+            return res;
+        }
+        res.put("data", c.getCRC4result(rs));
+        res.put("status", 200);
+        return res;
     }
 }

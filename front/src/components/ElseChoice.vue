@@ -59,7 +59,8 @@ export default {
                 //向指定的 server 发送数据
                 axios.post(`http://${res.data.addr}/execute`,
                   {
-                    sql: this.sql
+                    sql: this.sql,
+                    tableName: this.tableName
                   },
                   {
                     headers: {

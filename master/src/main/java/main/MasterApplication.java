@@ -39,7 +39,7 @@ public class MasterApplication {
     @Value("${server.port}")
     private int port;
 
-    @Scheduled(fixedRate = 5000) // 每 5s check 一次
+    @Scheduled(fixedRate = 10000) // 每 5s check 一次
     public void checkHotPoint() {
         System.out.println("Checking HOT POINT...");
         // 对每个 region 执行 count 操作
@@ -80,6 +80,7 @@ public class MasterApplication {
                 System.out.print(" " + tbList.get(i));
                 // 缺迁移接口 + 手动 drop
             }
+            System.out.print("\n");
         }
     }
 

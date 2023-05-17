@@ -31,9 +31,12 @@ public class Zookeeper {
         this.dataSource = dataSource;
         this.selfAddr = selfAddr.getBytes();
         this.zkServerAddr = zkServerIP + ":2181";
+        this.workPath = System.getProperty("user.dir");
         System.out.println(this.zkServerAddr);
     }
 
+    // 工作路径
+    private String workPath;
     private Boolean isMaster = false;
 
     private DataSource dataSource;
@@ -54,7 +57,6 @@ public class Zookeeper {
     public Boolean checkMaster() {
         return this.isMaster;
     }
-
 
     // 获取所有的 slave 地址
     public List<String> getSlaves() {
@@ -84,6 +86,7 @@ public class Zookeeper {
         // 读取创建结果
         try {
 //            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/region1/slaves/1", selfAddr);
+            client.setData().forPath("/test", "test update".getBytes());
             Stat stat = new Stat();
             System.out.println("data @ /test = " + new String(client.getData().storingStatIn(stat).forPath("/test")));
 //            System.out.println("data @ /test = " + new String(client.getData().storingStatIn(stat).forPath("/region1/slaves/1")));
@@ -105,6 +108,7 @@ public class Zookeeper {
 
     // 初始化当前数据集的 meta 信息
     public void init() {
+
         ZkListener zkListener = new ZkListener(this.client, this.basePath);
         this.zkListener = zkListener;
 
@@ -121,6 +125,14 @@ public class Zookeeper {
 
     }
 
+    public void checkTable(String tName) {
+        Checksum c = new Checksum(dataSource);
+        try {
+            this.client.setData().forPath(basePath + "/tables/" + tName, c.getCRC4table(tName).toString().getBytes());
+        } catch (Exception e) {
+            System.out.println("更新 zookeeper 中 TABLE " + tName + " 校验和出错");
+        }
+    }
 
     // 尝试成为 master
     public void beMaster() {
@@ -177,10 +189,64 @@ public class Zookeeper {
         try {
             this.client.create().withMode(CreateMode.EPHEMERAL).forPath(basePath + "/slaves/" + serverID, selfAddr);
             this.isMaster = false;
+            // dump
+            String masterAddr[] = new String(this.client.getData().forPath(basePath + "/master")).split(":");
+            String masterIP = masterAddr[0];
+            System.out.println(masterIP);
+//            dumpRemoteSql(masterIP);
+//            dumpRemoteSql("localhost");
         } catch (Exception e) {}
         // 注册对 /master 的监听
         this.zkListener.listenMaster();
     }
+
+    public boolean dumpRemoteSql(String ip) {
+        String databaseName="distributed";
+        String user="root";
+        String pwd="123456";
+        String  str1="mysqldump -u" + user +
+                " -h" + ip +
+//                " -P3306 "+
+                " -p" + pwd +" "+
+                databaseName +" -B "+
+                "> " + this.workPath + "\\sql\\db.sql";
+        System.out.println(str1);
+//                " > ./sql/" + "db.sql";
+        String str2="mysql -u" + user +
+                " -hlocalhost "+
+//                " -P3306 "+
+                " -p" + pwd +" "+
+                " -B "+
+                "< " + this.workPath + "\\sql\\db.sql";
+//                " < ./sql/" + "db.sql";
+
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder(str1.split("\\s+"));
+            Process process = processBuilder.start();
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                System.out.println("Command1 executed successfully.");
+            } else {
+                System.out.println("Command1 execution failed.");
+                return false;
+            }
+            ProcessBuilder processBuilder2 = new ProcessBuilder(str2.split("\\s+"));
+            Process process2 = processBuilder2.start();
+            int exitCode2 = process2.waitFor();
+            if (exitCode2 == 0) {
+                System.out.println("Command2 executed successfully.");
+
+            } else {
+                System.out.println("Command2 execution failed.");
+                return false;
+            }
+        } catch (Exception e) {
+            System.out.println("Error executing command: " + e.getMessage());
+
+        }
+        return true;
+    }
+
 
     // 向 /tables 下添加新的 table 信息
     public void addTable(String tName) {

@@ -8,7 +8,7 @@ module.exports = defineConfig({
       "/master": {
         // 请在此处配置 master 的地址
         // target: 'http://localhost:9090',
-        target: 'http://10.192.128.49:9090',
+        target: 'http://10.181.199.26:9090',
         ws: true,
         changeOrigin: true,
         pathRewrite: {
