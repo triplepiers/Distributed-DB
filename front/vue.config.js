@@ -7,7 +7,7 @@ module.exports = defineConfig({
     proxy: {
       "/master": {
         // 请在此处配置 master 的地址
-        target: 'http://10.181.199.26:9090',
+        target: 'http://10.181.215.240:9090',
         ws: true,
         changeOrigin: true,
         pathRewrite: {

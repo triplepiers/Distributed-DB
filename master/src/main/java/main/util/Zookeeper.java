@@ -10,8 +10,6 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.data.Stat;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
 
 public class Zookeeper {
@@ -102,7 +100,6 @@ public class Zookeeper {
             for (String path : childsPath) {
                 String data = new String(this.client.getData().forPath(parentPath + "/" + path));
                 childsData.add(data);
-                System.out.println("data @" + path + " = " + data);
             }
         } catch (Exception e) {
             System.out.println("子节点数据获取失败");

@@ -1,11 +1,17 @@
 package main.util;
+import com.alibaba.fastjson2.JSONObject;
+
 import java.sql.*;
+import java.util.ArrayList;
 import javax.sql.DataSource;
 
 public class Checksum {
+
+    DataSource dataSource;
     Connection conn = null;
     Statement stmt = null;
     public Checksum(DataSource dataSource) {
+        this.dataSource = dataSource;
         try {
             System.out.println("连接数据库...");
             this.conn = dataSource.getConnection();
@@ -37,6 +43,27 @@ public class Checksum {
 
     public Integer getCRC4result(ResultSet rs) {
         try {
+            Integer attriCount = rs.getMetaData().getColumnCount();
+            Integer crc4table = 0;
+            while (rs.next()) {
+                Integer crc = 0;
+                for (int i = 0; i < attriCount; i++) {
+                    crc += getCRC32(rs.getBytes(i+1));
+                }
+                crc4table += crc;
+            }
+            return crc4table;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public Integer getCRC4result(String sql) {
+        try {
+            Connection conn = dataSource.getConnection();
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
             Integer attriCount = rs.getMetaData().getColumnCount();
             Integer crc4table = 0;
             while (rs.next()) {
