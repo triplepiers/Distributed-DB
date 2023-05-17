@@ -314,7 +314,15 @@ public class MasterApplication {
         return res;
     }
 
-
+    @RequestMapping("/dump")
+    public JSONObject dumpTable(@RequestBody Map<String, String> data) {
+        JSONObject res = new JSONObject();
+        String srcIP = data.get("srcIP");
+        String tName = data.get("tableName");
+        zk.dumpRemoteTable(srcIP, tName);
+        res.put("status", 200);
+        return res;
+    }
 
     // 向从节点同步
     private void sync(String sql) {

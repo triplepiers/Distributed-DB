@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -46,7 +49,7 @@ public class MasterApplication {
         List<Integer> countVists = new ArrayList<>();
         int minn = 999;
         int minnIdx = -1;
-        int maxx = -1;
+        int maxx = 0;
         int maxxIdx = -1;
 
         for( int i = 1 ; i <= maxRegion ; i++) {
@@ -61,7 +64,8 @@ public class MasterApplication {
                 total += responseEntity.getBody();
             }
             countVists.add(total);
-            if (total < minn) {
+
+            if (total < minn && zk.isAvailable(i)) {
                 minn = total;
                 minnIdx = i;
             }
@@ -73,14 +77,68 @@ public class MasterApplication {
         }
 
         // maxx 切一半到 minn
-        if(maxx > threshold && maxx > 2*minn) {
+        if (maxxIdx > -1 && minnIdx > -1 && maxx > threshold && maxx > 2*minn) {
             System.out.println("HOST POINT is region[" + maxxIdx + "]，对以下 table 进行迁移");
             List<String> tbList = zk.getTables(maxxIdx);
             for (int i = 0 ; i < (tbList.size()+1)/2 ; i++) {
                 System.out.print(" " + tbList.get(i));
-                // 缺迁移接口 + 手动 drop
+                // 迁移
+                letDump(maxxIdx, minnIdx, tbList.get(i));
+                // drop
+                letDrop(maxxIdx,tbList.get(i));
             }
             System.out.print("\n");
+        }
+    }
+
+    // 将 table 从 region Src 迁移到 region Dest
+    private void letDump(int srcRegionID, int destRegionID, String tName) {
+        System.out.println("MOVE [" + tName + "] from region[" + srcRegionID + "] to region[" + destRegionID + "]");
+        // 获取 srcRegion 的 MasterIP
+        String srcIP = new String(zk.getRegionMaster(srcRegionID)).split(":")[0];
+
+        // 获取 destRegion 的 Server 列表（包括 Master）
+        List<String> destAddrs = zk.getServers(destRegionID);
+        for(String destAddr : destAddrs) {
+            // 让每一个 dest 迁移指定 table
+            String url = "http://" + destAddr + "/dump";
+            // 构建参数
+            JSONObject params = new JSONObject();
+            params.put("srcIP", srcIP);
+            params.put("tableName", tName);
+
+            // 构建 header
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<JSONObject> httpEntity = new HttpEntity<>(params, headers);
+            // 发起请求
+            RestTemplate client = new RestTemplate();
+            client.postForEntity(url, httpEntity, JSONObject.class);
+        }
+    }
+
+    // 让 region Src 删除指定 table
+    private void letDrop(int regionID, String tName) {
+        System.out.println("DELETE [" + tName + "] in region[" + regionID + "]");
+        // 获取 region 中的服务器列表
+        List<String> destAddrs = zk.getServers(regionID);
+        for(String destAddr : destAddrs) {
+            // 让每一个 dest 迁移指定 table
+            String url = "http://" + destAddr + "/drop";
+            // 构建参数
+            JSONObject params = new JSONObject();
+            params.put("tableName", tName);
+            params.put("sql", "DROP TABLE" + tName);
+
+            // 构建 header
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<JSONObject> httpEntity = new HttpEntity<>(params, headers);
+            // 发起请求
+            RestTemplate client = new RestTemplate();
+            client.postForEntity(url, httpEntity, JSONObject.class);
         }
     }
 

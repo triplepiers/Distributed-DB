@@ -189,14 +189,14 @@ public class Zookeeper {
             String masterAddr[] = new String(this.client.getData().forPath(basePath + "/master")).split(":");
             String masterIP = masterAddr[0];
             System.out.println(masterIP);
-            dumpRemoteSql(masterIP);
+            dumpRemoteDB(masterIP);
         } catch (Exception e) {}
         // 注册对 /master 的监听
         this.zkListener.listenMaster();
     }
 
     // 新的 dump 测试接口
-    public boolean dumpRemoteSql(String ip) {
+    public boolean dumpRemoteDB(String ip) {
         String databaseName="distributed";
         String user="root";
         String pwd="123456";
@@ -216,6 +216,35 @@ public class Zookeeper {
             System.out.println(str1);System.out.println(str2);
             Runtime.getRuntime().exec("cmd /c "+str1);
             Runtime.getRuntime().exec("cmd /c "+str2);
+        } catch (Exception e) {
+            System.out.println("Error executing command: " + e.getMessage());
+        }
+        return true;
+    }
+
+    public boolean dumpRemoteTable(String ip, String tableName) {
+        String databaseName="try";
+        String user="root";
+        String pwd="123456";
+        String  str1="mysqldump -u" + user +
+                " -h" + ip +
+                " -P3306 "+
+                " -p" + pwd +" "+
+                databaseName +" "+tableName+
+                "> " + this.workPath + "\\sql\\" + tableName + ".sql";
+//                " > ./sql/" +tableName+ ".sql";
+        String str2="mysql -u" + user +
+                " -hlocalhost "+
+                " -P3306 "+
+                " -p" + pwd +" "+
+                databaseName+" "+tableName+
+                "< " + this.workPath + "\\sql\\" + tableName + ".sql";
+//                " < ./sql/" + tableName+".sql";
+
+        try {
+            System.out.println(str1);System.out.println(str2);
+            Runtime.getRuntime().exec("cmd /c "+str1);
+            Runtime.getRuntime().exec("cmd /c start "+str2);
         } catch (Exception e) {
             System.out.println("Error executing command: " + e.getMessage());
         }

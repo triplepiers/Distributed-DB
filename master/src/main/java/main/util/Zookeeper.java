@@ -218,6 +218,22 @@ public class Zookeeper {
         return addr;
     }
 
+    // 获取指定 region 的 Master 地址
+    public String getRegionMaster(int regionID) {
+        return meta.get(regionID-1).master;
+    }
+
+    // 查看指定 region 是否有可用 server
+    public Boolean isAvailable(int reginID) {
+        // 有 master == 至少有一台 server
+        if(!meta.get(reginID-1).master.equals("")) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
     // 获取 meta 列表（tableName + writable）
     public JSONArray getMeta() {
         JSONArray res = new JSONArray();
