@@ -81,15 +81,11 @@ public class Zookeeper {
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(3000, 1);
         this.client = CuratorFrameworkFactory.newClient(zkServerAddr, 5000, 5000, retryPolicy);
         client.start();
-//
-        // 创建持久化节点
+
         // 读取创建结果
         try {
-//            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/region1/slaves/1", selfAddr);
-            client.setData().forPath("/test", "test update".getBytes());
             Stat stat = new Stat();
             System.out.println("data @ /test = " + new String(client.getData().storingStatIn(stat).forPath("/test")));
-//            System.out.println("data @ /test = " + new String(client.getData().storingStatIn(stat).forPath("/region1/slaves/1")));
             System.out.println("if you can see the return value, then you're successfully connected.");
         } catch (Exception e) {
             System.out.println(e);
@@ -193,60 +189,38 @@ public class Zookeeper {
             String masterAddr[] = new String(this.client.getData().forPath(basePath + "/master")).split(":");
             String masterIP = masterAddr[0];
             System.out.println(masterIP);
-//            dumpRemoteSql(masterIP);
-//            dumpRemoteSql("localhost");
+            dumpRemoteSql(masterIP);
         } catch (Exception e) {}
         // 注册对 /master 的监听
         this.zkListener.listenMaster();
     }
 
+    // 新的 dump 测试接口
     public boolean dumpRemoteSql(String ip) {
         String databaseName="distributed";
         String user="root";
         String pwd="123456";
         String  str1="mysqldump -u" + user +
                 " -h" + ip +
-//                " -P3306 "+
+                " -P3306 "+
                 " -p" + pwd +" "+
                 databaseName +" -B "+
                 "> " + this.workPath + "\\sql\\db.sql";
-        System.out.println(str1);
-//                " > ./sql/" + "db.sql";
         String str2="mysql -u" + user +
                 " -hlocalhost "+
-//                " -P3306 "+
+                " -P3306 "+
                 " -p" + pwd +" "+
                 " -B "+
                 "< " + this.workPath + "\\sql\\db.sql";
-//                " < ./sql/" + "db.sql";
-
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder(str1.split("\\s+"));
-            Process process = processBuilder.start();
-            int exitCode = process.waitFor();
-            if (exitCode == 0) {
-                System.out.println("Command1 executed successfully.");
-            } else {
-                System.out.println("Command1 execution failed.");
-                return false;
-            }
-            ProcessBuilder processBuilder2 = new ProcessBuilder(str2.split("\\s+"));
-            Process process2 = processBuilder2.start();
-            int exitCode2 = process2.waitFor();
-            if (exitCode2 == 0) {
-                System.out.println("Command2 executed successfully.");
-
-            } else {
-                System.out.println("Command2 execution failed.");
-                return false;
-            }
+            System.out.println(str1);System.out.println(str2);
+            Runtime.getRuntime().exec("cmd /c "+str1);
+            Runtime.getRuntime().exec("cmd /c "+str2);
         } catch (Exception e) {
             System.out.println("Error executing command: " + e.getMessage());
-
         }
         return true;
     }
-
 
     // 向 /tables 下添加新的 table 信息
     public void addTable(String tName) {
