@@ -29,6 +29,7 @@
 
 <script>
 import axios from 'axios'
+import pubsub from "pubsub-js";
 
 export default {
     name: 'SELECT',
@@ -58,6 +59,46 @@ export default {
           return
         }
 
+        // find in local cache first
+        let cached_addr = localStorage.getItem(this.tables)
+        let cache_valid = false
+        // if the table name is in the cache
+        if (cached_addr) {
+          axios.post(`http://${cached_addr}/select`,
+              {
+                sql: this.sql
+              },
+              {
+                headers: {
+                  'Content-Type' : 'application/json'
+                }
+              }
+          ).then(
+              res => {
+                // the cache is valid
+                if (res.data.status == 200) {
+                  this.result.meta = res.data.meta
+                  this.result.res = res.data.data
+                  this.$message({
+                    message: '筛选成功',
+                    type: 'success'
+                  });
+                  cache_valid = true
+                  this.tableName = ""
+                  this.sql = ""
+                }
+                // the cache is invalid
+                else {
+                  localStorage.removeItem(this.tableName)
+                }
+              }
+          )
+        }
+
+        if (cache_valid)
+          return
+
+        let addr
         axios.get(`/master/read?tableName=${this.tableName}`)
         .then(
           res => {
@@ -67,6 +108,7 @@ export default {
                   type: 'warning'
                 });
             } else if (res.data.status == 200) {
+              addr = res.data.addr
               axios.post(`http://${res.data.addr}/select`,
                   {
                     sql: this.sql
@@ -89,6 +131,8 @@ export default {
                         message: '筛选成功',
                         type: 'success'
                       });
+                      // add the mapping to cache
+                      localStorage.setItem(this.tableName, addr)
                     }
                   }
                 )

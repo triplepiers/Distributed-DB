@@ -1,84 +1,55 @@
 # README
 
----
+## 1 环境
 
-## UPDATE @2023/05/14
+- 系统：Windows 10
 
-- RegionServer 基本完工，工程见 `/regionServer`，接口见 md 文件
+- ZooKeeper 3.8.0 + JRE 8
 
-    - 把一些操作移到 `@PostConstruct / @PreDestroy` 以确保能够正常访问 dataSource 并在推出前自动关闭 Zookeeper 会话
+- NodeJS v18.16.0
 
-    - 整体处于 **单机能动** 的状态
+- Oracle OpenJDK version 20
 
-- 前端基本接上了（完全没考虑美感和用户胡乱操作的可能性）
+## 2 项目初始化
 
-- TODO
+### 2.1 Zookeeper 安装与配置
 
-    1. 写一下运行指南
+1. 将 `apache-zookeeper-3.8.0-bin.tar.gz` 移动至合适的安装路径下，解压。
 
-## UPDATE @2023/05/13
+2. 安装目录下创建 `data` & `log`路径，分别用于存储数据和日志。
 
-1. MASTER 基本完工，工程见 `/master` ，接口和 Zookeeper 节点设计见 md 文件（节点可能不太准）
-2. RegionServer 开了个头
-
-> 痛苦面具
-
-## UPDATE @2023/05/10
-
-本仓库结构调整：
-
-1. `sample` 之前的简单终端连接 zookeeper 样例
-2. `front` 一个草率的 Vue 项目（默认端口：8080）
-3. `master` 一个草率的 SpringBoot 项目
-    - 默认端口 8088，开启了 debug 模式
-    - 访问 `localhost:8088/` 应该会显示 `hello world`
-    - 在启动类的 main 函数里添加了连接 zookeeper、读取 `/test` 节点信息的操作
-        - 具体实现在 Zookeeper 类里
-        - 正常连接会在终端打印读取结果
-
----
-
-> Curator 这什么狗屎依赖关系啊 ！
-
-## 1 Zookeeper 运行环境
-
-1. Windows 10 （问就是不会配虚拟机的端口）
-2. JRE 8 （JDK 1.8及以上）
-3. Zookeeper 3.8.0
-
-> 至少在上述环境下能动
-
-### 1.1 Zookeeper 安装与运行
-> 资源在 `/dependencies` 目录下
-
-1. 将 `apache-zookeeper-3.8.0-bin.tar.gz` 挪到合适的安装路径下
-2. 使用 Powershell 解压至当前目录，命令如下：
-    ```shell
-    tar -zxvf apache-zookeeper-3.8.0-bin.tar.gz
-    ```
-3. 在根目录下（与 `/bin` 同级）创建 `data` & `log`路径，用于存储数据和日志
-4. 复制 `/dependencies` 下的 `zoo.cfg` 至安装目录的 `/conf` 文件夹下
+3. 复制 `/dependencies` 下的 `zoo.cfg` 至安装目录的 `/conf` 文件夹下
 
     请根据实际情况修改 `dataDir` 与 `dataLogDir` 配置项为实际绝对路径
 
-5. 把 `/bin/zkServer.cmd` 拖到命令提示符中运行
+4. 将 JRE8 的安装路径设置为系统变量 `JAVA_HOME` 
 
-### 1.2 JRE8 安装与环境变量配置
+### 2.2 MySQL 初始化
 
-- 在运行 `zkServer.cmd` 的过程中，您往往会遇到各种迷幻的错误 —— 这往往是由于未配置环境变量 or JDK 版本不匹配导致的
-- 为此，您需要安装 JDK1.8（或者仅 JRE8）来保证 Zookeeper 3.8.0 的正确运行）
-- `/dependencies` 下提供了 JRE8 的安装程序，请按需取用
-- 安装完毕后，请设置系统变量 `JAVA_HOME` 至 JRE8 的安装根路径（`/bin` 的上一级目录）
+1. 运行 regionServer 的机器需要在本地运行 `init.sql` 脚本以完成数据库初始化
 
-## 2 项目开发环境
+2. 执行以下命令允许使用 `root` 账号进行远程连接：
 
-1. open JDK 20
-2. Curator 5.2.1
-3. Zookeeper 3.8.0
+    ```sql
+    USE mysql;
+    UPDATE user SET host='%' WHERE user='root';
+    flush privileges;
+    ```
 
-> `pom.xml` 里已经写好了，直接用就行
+> 请关闭防火墙并开放 3306 & 9090 & 9091 以确保项目正常运行
 
-## 3 可供参考的 GitHub 仓库
+### 2.3 前端项目初始化
 
-1. https://github.com/Zhang-Each/Distributed-MiniSQL
-2. https://github.com/zwc233/LargeScaleSystem
+1. 进入前端项目根目录 `/front` 执行 `npm install` 以安装必要的依赖
+
+2. 请将 `vue.config.js` 中配置 `target` 为 Master 项目所在机器的实际 IP 地址
+
+## 3 项目运行
+
+1. 打开 `/bin` 目录下的 `zkServer.cmd` 以运行 ZooKeeper 服务
+
+2. 运行 Master 项目，自动初始化 Zookeeper 目录结构
+
+3. 运行 RegionServer 项目
+
+4. 运行 Front 项目，使用图形化界面操作数据库
