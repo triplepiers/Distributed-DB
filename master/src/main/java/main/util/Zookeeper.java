@@ -115,9 +115,8 @@ public class Zookeeper {
     public void initMeta() {
         for (int i = 0; i < this.maxRegion; i++) {
             RegionMeta regionMeta = new RegionMeta();
-            // 监听 /master 节点
             ZkListener zkListener = new ZkListener(this.client, "/region" + (i + 1), regionMeta);
-            zkListener.listenMaster();
+            // 监听 /master 节点
             zkListener.listenMaster();
             // 监听 /tables 的所有子节点
             zkListener.listenTables();
