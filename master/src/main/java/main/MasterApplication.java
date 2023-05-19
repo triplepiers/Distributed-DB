@@ -152,7 +152,7 @@ public class MasterApplication {
             // 构建参数
             JSONObject params = new JSONObject();
             params.put("tableName", tName);
-            params.put("sql", "DROP TABLE" + tName);
+            params.put("sql", "DROP TABLE " + tName);
 
             // 构建 header
             HttpHeaders headers = new HttpHeaders();
