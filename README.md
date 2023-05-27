@@ -53,3 +53,53 @@
 3. 运行 RegionServer 项目
 
 4. 运行 Front 项目，使用图形化界面操作数据库
+
+## 4 项目结构
+
+```text
+# 仅展示部分文件
+.
+├── README.md # 项目运行说明
+├── init.sql  # 数据库初始化脚本
+│
+├── dependencies
+│   ├── apache-zookeeper-3.8.0-bin.tar.gz # 使用的 ZooKeeper 安装包
+│   ├── jre-8u371-windows-x64.exe         # 使用的 JRE 安装包
+│   └── zoo.cfg                           # 供参考的 ZooKeeper 配置文件
+│
+├── front # Client 项目
+│   ├── src
+│   │   ├── App.vue    # 根组件
+│   │   ├── main.js    # 入口文件
+│   │   ├── components # 各路由组件
+│   │   │   ├── CreateTable.vue
+│   │   │   ├── DropTable.vue
+│   │   │   ├── ElseChoice.vue
+│   │   │   └── Select.vue
+│   │   ├── router     # 路由配置
+│   │   │   └── index.js
+│   │   └── store      # Vuex 共享数据配置
+│   │       └── index.js
+│   └── vue.config.js  # 项目配置
+│
+├── master # Master 项目
+│   └── src
+│       └── main
+│           └── java
+│               └── main
+│                   ├── MasterApplication.java # 入口类
+│                   └── util
+│                       ├── RegionMeta.java
+│                       └── Zookeeper.java
+│
+└── regionServer # Region Server 项目
+    └── src
+        └── main
+            └── java
+                └── main
+                    ├── MasterApplication.java # 入口类
+                    └── util
+                        ├── Checksum.java
+                        ├── Dump.java
+                        └── Zookeeper.java
+```
